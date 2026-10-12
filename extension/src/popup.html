@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Saver</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="popup-header">
+    <img src="../icons/icon48.png" width="24" height="24" alt="">
+    <h1 class="popup-header__name">Saver</h1>
+    <button id="open-dashboard" class="button button--ghost" type="button">
+      Saved items <span id="count" class="count">0</span>
+    </button>
+  </header>
+
+  <p id="message" class="message muted">Reading this page</p>
+
+  <form id="save-form" class="save-form" hidden>
+    <p id="hint" class="hint" hidden>This doesn't look like a product page. You can still save it.</p>
+
+    <div class="preview">
+      <div class="preview__media">
+        <div class="preview__image">
+          <img id="image" alt="" referrerpolicy="no-referrer">
+        </div>
+        <div id="pager" class="pager">
+          <button id="prev-image" class="pager__button" type="button" aria-label="Previous image">‹</button>
+          <span id="image-index" class="muted"></span>
+          <button id="next-image" class="pager__button" type="button" aria-label="Next image">›</button>
+        </div>
+      </div>
+      <div class="preview__fields">
+        <label class="field">
+          <span class="field__label">Title</span>
+          <textarea id="title" class="input" rows="3" required></textarea>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Price</span>
+            <input id="price" class="input" inputmode="decimal" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field__label">Currency</span>
+            <input id="currency" class="input input--currency" maxlength="3" autocomplete="off">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <p class="store muted">From <span id="store"></span></p>
+
+    <label class="field">
+      <span class="field__label">List</span>
+      <select id="list" class="input"></select>
+    </label>
+    <label id="new-list-field" class="field" hidden>
+      <span class="field__label">New list name</span>
+      <input id="new-list-name" class="input" maxlength="60" autocomplete="off">
+    </label>
+    <label class="field">
+      <span class="field__label">Note</span>
+      <textarea id="note" class="input" rows="2" placeholder="Size, colour, who it's for"></textarea>
+    </label>
+
+    <div class="actions">
+      <button id="save" class="button button--primary" type="submit">Save</button>
+      <button id="remove" class="button button--danger" type="button" hidden>Remove</button>
+    </div>
+    <p id="status" class="status" role="status"></p>
+  </form>
+
+  <script src="extractor.js"></script>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

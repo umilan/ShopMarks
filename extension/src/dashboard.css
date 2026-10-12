@@ -1,0 +1,517 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: var(--border);
+  background: var(--color-surface);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 216px;
+}
+
+.brand__name {
+  font-size: 20px;
+}
+
+.topbar__search {
+  flex: 1;
+  max-width: 400px;
+  min-height: 40px;
+  padding: 8px 16px;
+}
+
+.topbar__actions {
+  margin-left: auto;
+}
+
+/* Three-dot menu */
+
+.menu {
+  position: relative;
+}
+
+.menu__toggle {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+
+.menu__toggle[aria-expanded="true"] {
+  background: var(--color-surface-active);
+}
+
+.menu__sheet {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+  padding: 8px;
+  border: var(--border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.menu__item {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: var(--border);
+}
+
+.menu__note {
+  max-width: 240px;
+  padding: 8px 16px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.menu__item:hover {
+  background: var(--color-surface-hover);
+}
+
+.menu__item:active {
+  background: var(--color-surface-active);
+}
+
+.menu__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  align-items: start;
+}
+
+/* Sidebar */
+
+.sidebar {
+  position: sticky;
+  top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 16px 24px 24px;
+}
+
+.sidebar__lists {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-link:hover {
+  background: var(--color-surface-hover);
+}
+
+.list-link:active {
+  background: var(--color-surface-active);
+}
+
+.list-link[aria-current="true"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.list-link__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-link__count {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Main column */
+
+.main {
+  min-width: 0;
+  padding: 16px;
+}
+
+.main-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 16px;
+}
+
+.main-head__title {
+  font-size: 16px;
+}
+
+.main-head__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.main-head__sort {
+  width: auto;
+}
+
+/* Product cards */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+}
+
+.card:hover {
+  border-color: var(--border-color-hover);
+  box-shadow: var(--shadow);
+}
+
+.card__media {
+  position: relative;
+  border-bottom: var(--border);
+}
+
+.card__image {
+  display: grid;
+  /* Explicit tracks: an auto row would grow to the image's natural height. */
+  grid-template: 100% / 100%;
+  place-items: center;
+  height: 240px;
+  background: var(--color-image-bg);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.card__image:hover {
+  text-decoration: none;
+}
+
+.card__image:active {
+  opacity: 0.8;
+}
+
+.card__image--empty,
+.card__image--empty:hover,
+.card__image--empty:active {
+  padding: 16px;
+  background: hsl(var(--hue) 40% 40%);
+  color: var(--color-on-placeholder);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.card__image img {
+  width: 100%;
+  height: 100%;
+  padding: 0px;
+  object-fit: contain;
+}
+
+.card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+}
+
+.card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card__store {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__price {
+  flex: none;
+  font-size: 12px;
+  font-weight: 400;
+	opacity: 0.5;
+}
+
+/* One-line stripe along the bottom edge of the image. */
+.card__note {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 100%;
+  overflow: hidden;
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.card__note:active {
+  background: var(--color-surface);
+}
+
+/* Opened by a tap: grows with the text up to the full image, then scrolls. */
+.card__note--open {
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+  white-space: pre-line;
+}
+
+/* With a mouse, hovering opens it the same way. */
+@media (hover: hover) {
+  .card__note:hover {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    overscroll-behavior: contain;
+    white-space: pre-line;
+  }
+}
+
+/* Price change, over the top left corner of the image; leaves room for the icon buttons. */
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 96px);
+  overflow: hidden;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.badge--down {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.badge--up {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* Icon buttons over the top right corner of the image. */
+.card__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.card__actions .button {
+  width: 32px;
+  padding: 0;
+}
+
+/* With a mouse the icons show on hover or keyboard focus; touch screens always show them. */
+@media (hover: hover) {
+  .card__actions {
+    opacity: 0;
+  }
+
+  .card:hover .card__actions,
+  .card__actions:focus-within {
+    opacity: 1;
+  }
+}
+
+.empty {
+  max-width: 480px;
+  margin: 64px auto;
+  text-align: center;
+}
+
+/* Dialogs and toast */
+
+.dialog {
+  width: min(480px, calc(100% - 32px));
+  padding: 24px;
+  border: var(--border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+}
+
+.dialog::backdrop {
+  background: var(--color-overlay);
+}
+
+.dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog__title {
+  font-size: 20px;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 4;
+  max-width: calc(100% - 32px);
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+@media (max-width: 800px) {
+  .topbar {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .brand {
+    width: auto;
+  }
+
+  /* On small screens the menu is a sheet along the bottom edge. */
+  .menu__sheet {
+    position: fixed;
+    top: auto;
+    left: 0;
+    bottom: 0;
+    padding: 16px;
+    border-radius: var(--radius-large) var(--radius-large) 0 0;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+  }
+
+  .sidebar__lists {
+    flex: 1;
+    flex-direction: row;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  /* Icon only; the title and the visually hidden label still name it. */
+  .sidebar__new {
+    flex: none;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .sidebar__new-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .list-link {
+    flex: none;
+  }
+
+  .main {
+    padding: 16px 16px 64px;
+  }
+}

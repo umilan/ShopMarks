@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Saver extractor tests</title>
+</head>
+<body>
+  <!-- Open this file in Chrome: every line should say PASS. -->
+  <pre id="out"></pre>
+
+  <!-- Live fixture for the visible-price fallback, which needs real layout. -->
+  <div id="live-fixture">
+    <span class="price-old" style="font-size: 32px">1 499 Kč</span>
+    <div class="product-price" style="font-size: 24px"><del>1 499 Kč</del> 1 299,90 Kč</div>
+    <span class="shipping-price" style="font-size: 12px">79 Kč</span>
+  </div>
+
+  <script src="../extension/src/extractor.js"></script>
+  <script>
+    const results = [];
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const check = (name, actual, expected) => {
+      const ok = same(actual, expected);
+      results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `\n      got      ${JSON.stringify(actual)}\n      expected ${JSON.stringify(expected)}`}`);
+    };
+    const page = (html) => new DOMParser().parseFromString(html, 'text/html');
+    const read = (html, url = 'https://www.shop.example/p/lamp?utm_source=x') => SaverExtract(page(html), url);
+    const { parsePrice } = SaverExtract;
+
+    // parsePrice
+    check('price: czech grouping', parsePrice('1 299,90 Kč'), 1299.9);
+    check('price: non-breaking space', parsePrice('1 299 Kč'), 1299);
+    check('price: german grouping', parsePrice('€ 1.299,90'), 1299.9);
+    check('price: english grouping', parsePrice('$1,299.90'), 1299.9);
+    check('price: plain decimal', parsePrice('24,99 €'), 24.99);
+    check('price: thousands without decimals', parsePrice('1.299 €'), 1299);
+    check('price: trailing dash', parsePrice('1 299,- Kč'), 1299);
+    check('price: two numbers are not merged', parsePrice('120 99'), 120);
+    check('price: machine format keeps decimals', parsePrice('19.990', true), 19.99);
+    check('price: machine flag still reads human text', parsePrice('1 299,00', true), 1299);
+    check('price: number passthrough', parsePrice(49.5), 49.5);
+    check('price: nothing to read', parsePrice('Sold out'), null);
+    check('price: zero is not a price', parsePrice('0'), null);
+
+    // JSON-LD
+    const jsonLd = read(`
+      <title>Lamp | Shop</title>
+      <link rel="canonical" href="https://www.shop.example/p/lamp">
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"  Oak  desk lamp ",
+        "image":["/img/lamp-1.jpg","https://cdn.example/lamp-2.jpg"],
+        "offers":{"@type":"Offer","price":"1299.90","priceCurrency":"czk"}}<\/script>`);
+    check('json-ld: title is trimmed', jsonLd.title, 'Oak desk lamp');
+    check('json-ld: price', jsonLd.price, 1299.9);
+    check('json-ld: currency is upper-cased', jsonLd.currency, 'CZK');
+    check('json-ld: images are absolute', jsonLd.images, ['https://www.shop.example/img/lamp-1.jpg', 'https://cdn.example/lamp-2.jpg']);
+    check('json-ld: canonical url is used', jsonLd.url, 'https://www.shop.example/p/lamp');
+    check('json-ld: is a product', jsonLd.isProduct, true);
+
+    const graph = read(`
+      <script type="application/ld+json">{ this is broken <\/script>
+      <script type="application/ld+json">{"@graph":[{"@type":"WebSite","name":"Shop"},
+        {"@type":["Product","Thing"],"name":"Trail shoes","image":{"@type":"ImageObject","url":"https://cdn.example/shoe.jpg"},
+         "offers":{"@type":"AggregateOffer","lowPrice":89,"highPrice":120,"priceCurrency":"EUR"}}]}<\/script>`);
+    check('json-ld graph: survives a broken block', graph.title, 'Trail shoes');
+    check('json-ld graph: aggregate offer uses the low price', [graph.price, graph.currency], [89, 'EUR']);
+    check('json-ld graph: image object', graph.images, ['https://cdn.example/shoe.jpg']);
+
+    const offerList = read(`<script type="application/ld+json">{"@type":"http://schema.org/Product","name":"Mug",
+      "offers":[{"@type":"Offer","priceSpecification":{"price":"12.50","priceCurrency":"GBP"}}]}<\/script>`);
+    check('json-ld: price specification inside an offer list', [offerList.price, offerList.currency], [12.5, 'GBP']);
+
+    const group = read(`<script type="application/ld+json">{"@type":"ProductGroup","name":"T-shirt",
+      "hasVariant":[{"@type":"Product","name":"T-shirt M","offers":{"price":19,"priceCurrency":"USD"}}]}<\/script>`);
+    check('json-ld: product group takes the group name and a variant price', [group.title, group.price], ['T-shirt', 19]);
+
+    // Open Graph
+    const og = read(`
+      <meta property="og:type" content="product">
+      <meta property="og:title" content="Espresso machine">
+      <meta property="og:image" content="//cdn.example/espresso.jpg">
+      <meta property="og:site_name" content="Coffee Shop">
+      <meta property="product:price:amount" content="249,00">
+      <meta property="product:price:currency" content="EUR">
+      <link rel="canonical" href="https://www.shop.example/">`);
+    check('open graph: title', og.title, 'Espresso machine');
+    check('open graph: price', [og.price, og.currency], [249, 'EUR']);
+    check('open graph: protocol-relative image', og.images, ['https://cdn.example/espresso.jpg']);
+    check('open graph: site name', og.siteName, 'Coffee Shop');
+    check('open graph: canonical pointing at the home page is ignored', og.url, 'https://www.shop.example/p/lamp?utm_source=x');
+
+    // Microdata
+    const micro = read(`
+      <div itemscope itemtype="https://schema.org/Product">
+        <h1 itemprop="name">Wool blanket</h1>
+        <img itemprop="image" src="/img/blanket.jpg">
+        <span itemprop="price" content="59.00">59,00</span>
+        <meta itemprop="priceCurrency" content="EUR">
+      </div>`);
+    check('microdata: title', micro.title, 'Wool blanket');
+    check('microdata: price', [micro.price, micro.currency], [59, 'EUR']);
+    check('microdata: image', micro.images, ['https://www.shop.example/img/blanket.jpg']);
+
+    // Pages that are not products
+    const article = read(`<title>How to choose a lamp</title><p class="price">from 99 €</p>
+      <link rel="canonical" href="javascript:alert(1)">`);
+    check('non-product: falls back to the page title', article.title, 'How to choose a lamp');
+    check('non-product: not flagged as a product', article.isProduct, false);
+    check('non-product: no price guessed without layout', article.price, null);
+    check('non-product: unsafe canonical is ignored', article.url, 'https://www.shop.example/p/lamp?utm_source=x');
+
+    // Visible-price fallback on this live document
+    const live = SaverExtract(document, 'https://www.shop.example/p/chair');
+    check('visible price: skips old and struck-through prices', [live.price, live.currency], [1299.9, 'CZK']);
+
+    const failed = results.filter((line) => line.startsWith('FAIL')).length;
+    document.title = failed ? `FAIL ${failed}/${results.length}` : `PASS ${results.length}/${results.length}`;
+    document.getElementById('out').textContent = `${document.title}\n\n${results.join('\n')}`;
+  </script>
+</body>
+</html>

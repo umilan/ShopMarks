@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saver</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="../icons/icon48.png" width="32" height="32" alt="">
+      <h1 class="brand__name">Saver</h1>
+    </div>
+    <input id="search" class="input topbar__search" type="search" placeholder="Search saved items" aria-label="Search saved items">
+    <div class="topbar__actions menu">
+      <button id="menu-toggle" class="button button--ghost menu__toggle" type="button" title="More actions" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+      </button>
+      <div id="menu" class="menu__sheet" role="menu" hidden>
+        <button id="check-prices" class="menu__item" type="button" role="menuitem">Check prices</button>
+        <button id="export" class="menu__item" type="button" role="menuitem">Export</button>
+        <button id="import" class="menu__item" type="button" role="menuitem">Import…</button>
+        <div id="backup-menu" class="menu__group" hidden>
+          <p id="backup-status" class="menu__note muted" hidden></p>
+          <button id="backup-resume" class="menu__item" type="button" role="menuitem" hidden>Resume backup</button>
+          <button id="backup-choose" class="menu__item" type="button" role="menuitem">Backup folder…</button>
+          <button id="backup-stop" class="menu__item" type="button" role="menuitem" hidden>Stop backup</button>
+        </div>
+      </div>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" aria-label="Lists">
+      <div id="lists" class="sidebar__lists"></div>
+      <button id="new-list" class="button sidebar__new" type="button" title="New list…">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span class="sidebar__new-label">New list…</span>
+      </button>
+    </nav>
+
+    <main class="main">
+      <div class="main-head">
+        <h2 id="list-title" class="main-head__title"></h2>
+        <div class="main-head__controls">
+          <select id="sort" class="input main-head__sort" aria-label="Sort">
+            <option value="newest">Newest first</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="drop">Biggest price drop</option>
+            <option value="store">Shop A–Z</option>
+          </select>
+          <button id="rename-list" class="button button--ghost" type="button">Rename…</button>
+          <button id="delete-list" class="button button--ghost button--danger" type="button">Delete list…</button>
+        </div>
+      </div>
+
+      <div id="grid" class="grid"></div>
+      <p id="empty" class="empty muted" hidden></p>
+    </main>
+  </div>
+
+  <dialog id="edit-dialog" class="dialog">
+    <form method="dialog" class="dialog__form">
+      <h2 class="dialog__title">Edit item</h2>
+      <label class="field">
+        <span class="field__label">Title</span>
+        <textarea id="edit-title" class="input" rows="3" required></textarea>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Price</span>
+          <input id="edit-price" class="input" inputmode="decimal" autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="field__label">Currency</span>
+          <input id="edit-currency" class="input input--currency" maxlength="3" autocomplete="off">
+        </label>
+      </div>
+      <label class="field">
+        <span class="field__label">List</span>
+        <select id="edit-list" class="input"></select>
+      </label>
+      <label class="field">
+        <span class="field__label">Note</span>
+        <textarea id="edit-note" class="input" rows="3"></textarea>
+      </label>
+      <div class="dialog__actions">
+        <button class="button" value="cancel" formnovalidate>Cancel</button>
+        <button class="button button--primary" value="ok">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="name-dialog" class="dialog">
+    <form method="dialog" class="dialog__form">
+      <h2 id="name-title" class="dialog__title"></h2>
+      <label class="field">
+        <span class="field__label">List name</span>
+        <input id="name-input" class="input" maxlength="60" autocomplete="off" required>
+      </label>
+      <div class="dialog__actions">
+        <button class="button" value="cancel" formnovalidate>Cancel</button>
+        <button class="button button--primary" value="ok">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="dialog">
+    <form method="dialog" class="dialog__form">
+      <h2 id="confirm-title" class="dialog__title"></h2>
+      <p id="confirm-text" class="muted"></p>
+      <div class="dialog__actions">
+        <button class="button" value="cancel">Cancel</button>
+        <button class="button button--danger" value="ok">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <p id="toast" class="toast" role="status" hidden></p>
+
+  <script src="extractor.js"></script>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
