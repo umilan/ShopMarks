@@ -546,16 +546,20 @@
     white-space: nowrap;
   }
 
+  /* Only as wide as the chosen list, so the chevron sits right after the name. */
   .topbar .sidebar__picker {
     display: block;
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
-    min-height: 40px;
+    height: 40px;
+    field-sizing: content;
   }
 
-  /* Sort shrinks to its icon; the open dropdown still lists the options by name. */
+  /* Sort shrinks to its icon; the open dropdown still lists the options by name.
+     It also pushes the icon buttons to the right edge. */
   .topbar .main-head__sort {
     flex: none;
+    margin-left: auto;
   }
 
   .topbar .main-head__sort .input {
@@ -573,6 +577,26 @@
     left: 50%;
     translate: -50% -50%;
     color: var(--color-text);
+  }
+
+  /* Plain controls: the field shows only on hover, or while its menu is open. */
+  .topbar .sidebar__picker,
+  .topbar .main-head__sort .input,
+  .topbar .topbar__icon-button {
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  .topbar .sidebar__picker:hover,
+  .topbar .main-head__sort .input:hover,
+  .topbar .topbar__icon-button:hover {
+    border-color: var(--border-color);
+    background-color: var(--color-surface-hover);
+  }
+
+  .topbar .menu__toggle[aria-expanded="true"] {
+    border-color: var(--border-color);
+    background-color: var(--color-surface-active);
   }
 
   .topbar__search,

@@ -50,7 +50,7 @@ Every control reacts the same way. Hover and press darken the fill one step each
 
 | Control rests on | Hover | Press / open |
 |---|---|---|
-| Nothing (plain: ghost buttons, desktop sort) | `--blk5p` fill + normal border | `--blk10p` |
+| Nothing (plain: ghost buttons, desktop sort, mobile top-bar controls) | `--blk5p` fill + normal border | `--blk10p` |
 | White (regular buttons, list rows, menu items) | `--blk5p` | `--blk10p` |
 | `--blk5p` (fields, top-bar icon buttons) | `--blk10p` | `--blk10p` |
 
