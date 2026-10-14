@@ -6,6 +6,9 @@ export const DEFAULT_LIST_ID = 'default';
 const DEFAULT_LIST = { id: DEFAULT_LIST_ID, name: 'Saved' };
 const TRACKING_PARAM = /^(utm_\w+|gclid|fbclid|msclkid|mc_[ce]id|_ga)$/i;
 const EDITABLE_FIELDS = ['title', 'image', 'listId', 'note'];
+const LOCALE = 'sk-SK';
+const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=EUR';
+const RATES_MAX_AGE = 12 * 60 * 60 * 1000;
 
 export function normalizeUrl(url) {
   try {
@@ -33,13 +36,40 @@ export function findByUrl(products, url) {
   return products.find((product) => product.url === normalized);
 }
 
-export function formatPrice(price, currency) {
-  if (price == null) return '';
+// Euro exchange rates from the ECB (via Frankfurter): how much of each currency one euro buys.
+// Kept for half a day; an older copy is used while the service can't be reached.
+export async function loadRates() {
+  const { rates: cached } = await chrome.storage.local.get('rates');
+  if (cached && Date.now() - cached.fetchedAt < RATES_MAX_AGE) return cached.values;
   try {
-    const options = currency ? { style: 'currency', currency } : { maximumFractionDigits: 2 };
-    return new Intl.NumberFormat(undefined, options).format(price);
+    const response = await fetch(RATES_URL);
+    if (!response.ok) throw new Error(`Rates: ${response.status}`);
+    const { rates } = await response.json();
+    await chrome.storage.local.set({ rates: { values: rates, fetchedAt: Date.now() } });
+    return rates;
   } catch {
-    return `${price} ${currency ?? ''}`.trim();
+    return cached?.values ?? {};
+  }
+}
+
+// The price in euros, or null when its currency has no known rate. A price without a currency counts as euros.
+export function toEuro(price, currency, rates = {}) {
+  if (price == null) return null;
+  if (!currency || currency === 'EUR') return price;
+  return rates[currency] ? price / rates[currency] : null;
+}
+
+// Prices are shown in euros the Slovak way ("17,30 €"); a converted one starts with "≈".
+// Without a rate for its currency, a price stays in that currency.
+export function formatPrice(price, currency, rates) {
+  if (price == null) return '';
+  const euros = toEuro(price, currency, rates);
+  try {
+    if (euros == null) return new Intl.NumberFormat(LOCALE, { style: 'currency', currency }).format(price);
+    const converted = currency && currency !== 'EUR';
+    return `${converted ? '≈ ' : ''}${new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'EUR' }).format(euros)}`;
+  } catch {
+    return `${price} ${currency}`;
   }
 }
 
@@ -57,7 +87,8 @@ export async function getState() {
 
 export function onChange(callback) {
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local') callback();
+    // Fresh exchange rates are not a change to the saved data.
+    if (area === 'local' && !('rates' in changes)) callback();
   });
 }
 

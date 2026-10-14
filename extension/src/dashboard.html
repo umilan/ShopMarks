@@ -14,10 +14,17 @@
       <img src="../icons/icon48.png" width="32" height="32" alt="">
       <h1 class="brand__name">Saver</h1>
     </div>
-    <input id="search" class="input topbar__search" type="search" placeholder="Search saved items" aria-label="Search saved items">
+    <div id="search-field" class="input-icon topbar__search">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" class="input" type="search" placeholder="Search saved items" aria-label="Search saved items">
+    </div>
+    <button id="search-toggle" class="button topbar__icon-button topbar__search-toggle" type="button" title="Search" aria-label="Search" aria-expanded="false" aria-controls="search">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="topbar__search-open"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="topbar__search-close"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
     <div class="topbar__actions menu">
-      <button id="menu-toggle" class="button button--ghost menu__toggle" type="button" title="More actions" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+      <button id="menu-toggle" class="button topbar__icon-button menu__toggle" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
       <div id="menu" class="menu__sheet" role="menu" hidden>
         <button id="check-prices" class="menu__item" type="button" role="menuitem">Check prices</button>
@@ -36,24 +43,30 @@
 
   <div class="layout">
     <nav class="sidebar" aria-label="Lists">
+      <div class="sidebar__head">
+        <h2 id="lists-title" class="sidebar__title"></h2>
+        <button id="new-list" class="button button--ghost sidebar__new" type="button" title="New list…" aria-label="New list…">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
+      </div>
       <div id="lists" class="sidebar__lists"></div>
-      <button id="new-list" class="button sidebar__new" type="button" title="New list…">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        <span class="sidebar__new-label">New list…</span>
-      </button>
+      <select id="list-picker" class="input sidebar__picker" aria-label="List"></select>
     </nav>
 
     <main class="main">
       <div class="main-head">
         <h2 id="list-title" class="main-head__title"></h2>
         <div class="main-head__controls">
-          <select id="sort" class="input main-head__sort" aria-label="Sort">
-            <option value="newest">Newest first</option>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-            <option value="drop">Biggest price drop</option>
-            <option value="store">Shop A–Z</option>
-          </select>
+          <div id="sort-field" class="input-icon main-head__sort">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+            <select id="sort" class="input" aria-label="Sort">
+              <option value="newest">Newest first</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="drop">Biggest price drop</option>
+              <option value="store">Shop A–Z</option>
+            </select>
+          </div>
           <button id="rename-list" class="button button--ghost" type="button">Rename…</button>
           <button id="delete-list" class="button button--ghost button--danger" type="button">Delete list…</button>
         </div>
@@ -64,7 +77,7 @@
     </main>
   </div>
 
-  <dialog id="edit-dialog" class="dialog">
+  <dialog id="edit-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 class="dialog__title">Edit item</h2>
       <label class="field">
@@ -96,7 +109,7 @@
     </form>
   </dialog>
 
-  <dialog id="name-dialog" class="dialog">
+  <dialog id="name-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 id="name-title" class="dialog__title"></h2>
       <label class="field">
@@ -110,7 +123,7 @@
     </form>
   </dialog>
 
-  <dialog id="confirm-dialog" class="dialog">
+  <dialog id="confirm-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 id="confirm-title" class="dialog__title"></h2>
       <p id="confirm-text" class="muted"></p>

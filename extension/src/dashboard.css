@@ -1,7 +1,7 @@
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -14,7 +14,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 216px;
 }
 
 .brand__name {
@@ -23,27 +22,37 @@
 
 .topbar__search {
   flex: 1;
-  max-width: 400px;
-  min-height: 40px;
-  padding: 8px 16px;
+}
+
+.topbar__search .input {
+  height: 40px;
+  padding: 8px 16px 8px 40px;
 }
 
 .topbar__actions {
   margin-left: auto;
 }
 
-/* Three-dot menu */
+.topbar__search-toggle {
+  display: none;
+}
+
+/* Settings menu */
 
 .menu {
   position: relative;
 }
 
-.menu__toggle {
+.topbar__icon-button {
+  flex: none;
   width: 40px;
-  min-height: 40px;
+  height: 40px;
   padding: 0;
+  background: var(--blk5p);
 }
 
+/* Resting fill already matches the usual button hover, so hover goes one step darker. */
+.topbar__icon-button:hover,
 .menu__toggle[aria-expanded="true"] {
   background: var(--color-surface-active);
 }
@@ -62,6 +71,29 @@
   border-radius: var(--radius-large);
   background: var(--color-surface);
   box-shadow: var(--shadow);
+  /* Slides in on open and back out on close; display flips after the slide out. */
+  transition:
+    translate 0.15s ease-out,
+    opacity 0.15s ease-out,
+    display 0.15s allow-discrete;
+}
+
+.menu__sheet[hidden] {
+  translate: 0 -8px;
+  opacity: 0;
+}
+
+@starting-style {
+  .menu__sheet {
+    translate: 0 -8px;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__sheet {
+    transition: none;
+  }
 }
 
 .menu__item {
@@ -116,17 +148,42 @@
 
 .sidebar {
   position: sticky;
-  top: 72px;
+  top: var(--topbar-height, 72px);
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 24px 16px 24px 24px;
 }
 
+/* Heading with the New list button at its end. As tall as the main heading row
+   (the sort field), so both headings sit on the same line. */
+.sidebar__head {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Same size as the list heading in the main column. */
+.sidebar__title {
+  padding: 0 0px;
+  font-size: 16px;
+}
+
+.sidebar__new {
+  width: 32px;
+  padding: 0;
+}
+
 .sidebar__lists {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.sidebar__picker {
+  display: none;
 }
 
 .list-link {
@@ -178,13 +235,19 @@
   padding: 16px;
 }
 
+/* Stays under the top bar; full-bleed so cards scroll out of sight beneath it. */
 .main-head {
+  position: sticky;
+  top: var(--topbar-height, 72px);
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 8px 0 16px;
+  margin: -16px -16px 0;
+  padding: 24px 16px 16px;
+  background: var(--color-bg);
 }
 
 .main-head__title {
@@ -198,8 +261,9 @@
   gap: 8px;
 }
 
-.main-head__sort {
+.main-head__sort .input {
   width: auto;
+  height: 40px;
 }
 
 /* Product cards */
@@ -300,11 +364,38 @@
   white-space: nowrap;
 }
 
-.card__price {
+.card__pricing {
+  display: flex;
   flex: none;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
+}
+
+.card__price {
   font-weight: 400;
-	opacity: 0.5;
+  color: var(--color-text-muted);
+}
+
+/* Price change since the product was saved; hover shows the old price. */
+.card__change {
+  font-weight: 600;
+}
+
+.card__change--down {
+  color: var(--color-price-down);
+}
+
+.card__change--down:hover {
+  color: var(--color-price-down-hover);
+}
+
+.card__change--up {
+  color: var(--color-price-up);
+}
+
+.card__change--up:hover {
+  color: var(--color-price-up-hover);
 }
 
 /* One-line stripe along the bottom edge of the image. */
@@ -343,32 +434,6 @@
     overscroll-behavior: contain;
     white-space: pre-line;
   }
-}
-
-/* Price change, over the top left corner of the image; leaves room for the icon buttons. */
-.badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  max-width: calc(100% - 96px);
-  overflow: hidden;
-  padding: 2px 8px;
-  border-radius: var(--radius);
-  font-size: 12px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.badge--down {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-}
-
-.badge--up {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
 }
 
 /* Icon buttons over the top right corner of the image. */
@@ -452,13 +517,65 @@
 }
 
 @media (max-width: 800px) {
+  /* One row: logo, list picker, sort, search and settings. */
   .topbar {
-    flex-wrap: wrap;
+    gap: 8px;
     padding: 16px;
   }
 
-  .brand {
-    width: auto;
+  .brand__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .topbar .sidebar__picker {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  /* Sort shrinks to its icon; the open dropdown still lists the options by name. */
+  .topbar .main-head__sort {
+    flex: none;
+  }
+
+  .topbar .main-head__sort .input {
+    width: 40px;
+    padding: 0;
+    background-image: none;
+    color: transparent;
+  }
+
+  .topbar .main-head__sort option {
+    color: var(--color-text);
+  }
+
+  .topbar .main-head__sort > svg {
+    left: 50%;
+    translate: -50% -50%;
+    color: var(--color-text);
+  }
+
+  .topbar__search,
+  .topbar__search-close,
+  .topbar--searching .sidebar__picker,
+  .topbar--searching .main-head__sort,
+  .topbar--searching .topbar__search-open {
+    display: none;
+  }
+
+  .topbar__search-toggle,
+  .topbar--searching .topbar__search {
+    display: flex;
+  }
+
+  .topbar--searching .topbar__search-close {
+    display: block;
   }
 
   /* On small screens the menu is a sheet along the bottom edge. */
@@ -469,46 +586,40 @@
     bottom: 0;
     padding: 16px;
     border-radius: var(--radius-large) var(--radius-large) 0 0;
+    transition-duration: 0.25s;
+  }
+
+  /* The bottom sheet slides fully off the bottom edge instead of fading. */
+  .menu__sheet[hidden] {
+    translate: 0 100%;
+    opacity: 1;
+  }
+
+  @starting-style {
+    .menu__sheet {
+      translate: 0 100%;
+      opacity: 1;
+    }
   }
 
   .layout {
     grid-template-columns: 1fr;
   }
 
+  /* The picker and sorting live in the top bar, so the list row has nothing left to show. */
   .sidebar {
-    position: static;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    padding: 16px;
+    display: none;
   }
 
-  .sidebar__lists {
-    flex: 1;
-    flex-direction: row;
-    min-width: 0;
-    overflow-x: auto;
+  /* The list picker already names the list; the row stays only for Rename and Delete. */
+  .main-head {
+    top: calc(var(--topbar-height, 72px) + var(--sidebar-height, 72px));
+    padding-top: 0;
   }
 
-  /* Icon only; the title and the visually hidden label still name it. */
-  .sidebar__new {
-    flex: none;
-    width: 40px;
-    min-height: 40px;
-    padding: 0;
-  }
-
-  .sidebar__new-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .list-link {
-    flex: none;
+  .main-head__title,
+  .main-head:not(:has(.button:not([hidden]))) {
+    display: none;
   }
 
   .main {

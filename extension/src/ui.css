@@ -3,27 +3,50 @@
 :root {
   color-scheme: light dark;
 
-  --color-bg: #f5f4f0;
-  --color-surface: #ffffff;
-  --color-surface-hover: #efede7;
-  --color-surface-active: #e5e2da;
-  --color-text: #1d1c1a;
-  --color-text-muted: #66635c;
-  --color-accent: #1f6f5c;
-  --color-accent-hover: #195c4c;
-  --color-accent-active: #13473b;
-  --color-accent-soft: #e2f0ec;
-  --color-on-accent: #ffffff;
+  --wht5p: rgba(255,255,255,0.05);
+  --wht10p: rgba(255,255,255,0.1);
+  --wht50p: rgba(255,255,255,0.5);
+  --wht100p: rgba(255,255,255,1);
+  --blk5p: rgba(0,0,0,0.05);
+  --blk10p: rgba(0,0,0,0.1);
+  --blk50p: rgba(0,0,0,0.5);
+  --blk100p: rgba(0,0,0,1);
+  --acc10p: rgba(25,100,50,0.1);
+  --acc50p: rgba(25,100,50,0.5);
+  --acc100p: rgb(25,100,50);
+/* A drop is good news (accent), a rise is bad news (danger). */
+  --color-price-down: var(--color-accent);
+  --color-price-down-hover: var(--color-accent-hover);
+  --color-price-up: var(--color-danger);
+  --color-price-up-hover: color-mix(in srgb, var(--color-danger), var(--blk100p) 10%);
+
+  /* Semantic colors, built only from the palette above. Opaque mixes are for
+     surfaces that cards scroll under (sticky rows), where alpha would show through. */
+  --color-bg: color-mix(in srgb, var(--blk100p) 5%, var(--wht100p));
+  --color-surface: var(--wht100p);
+  --color-surface-hover: var(--blk5p);
+  --color-surface-active: var(--blk10p);
+  --color-text: var(--blk100p);
+  --color-text-muted: var(--blk50p);
+  --color-accent: var(--acc100p);
+  --color-accent-hover: color-mix(in srgb, var(--acc100p), var(--blk100p) 10%);
+  --color-accent-active: color-mix(in srgb, var(--acc100p), var(--blk100p) 50%);
+  --color-accent-soft: var(--acc10p);
+  --color-on-accent: var(--wht100p);
+  /* The palette has no red, so danger keeps its own colors. */
   --color-danger: #b3261e;
   --color-danger-soft: #fbe9e7;
   --color-danger-soft-active: #f6d5d1;
-  --color-image-bg: #e5e2da;
-  --color-on-placeholder: #ffffff;
-  --color-overlay: rgb(0 0 0 / 0.4);
-  --color-shadow: rgb(0 0 0 / 0.08);
+  --color-image-bg: var(--blk10p);
+  --color-on-placeholder: var(--wht100p);
+  --color-overlay: var(--blk50p);
+  --color-shadow: var(--blk10p);
 
-  --border-color: #dedbd3;
-  --border-color-hover: #b9b5ab;
+  /* SVG data URIs can't read variables; the stroke matches --blk50p. */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+  --border-color: var(--blk10p);
+  --border-color-hover: var(--blk50p);
   --border: 1px solid var(--border-color);
   --border-focus: 2px solid var(--color-accent);
 
@@ -35,25 +58,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #171715;
-    --color-surface: #22211f;
-    --color-surface-hover: #2c2b28;
-    --color-surface-active: #363430;
-    --color-text: #f1efe9;
-    --color-text-muted: #a5a29a;
-    --color-accent: #5cc2a8;
-    --color-accent-hover: #74cfb7;
-    --color-accent-active: #8ad9c4;
-    --color-accent-soft: #1d3a33;
-    --color-on-accent: #0d2420;
+    --color-bg: color-mix(in srgb, var(--wht100p) 5%, var(--blk100p));
+    --color-surface: color-mix(in srgb, var(--wht100p) 10%, var(--blk100p));
+    --color-surface-hover: var(--wht5p);
+    --color-surface-active: var(--wht10p);
+    --color-text: var(--wht100p);
+    --color-text-muted: var(--wht50p);
+    /* The plain accent is too dark to read on black, so dark mode lightens it. */
+    --color-accent: color-mix(in srgb, var(--acc100p), var(--wht100p) 50%);
+    --color-accent-hover: color-mix(in srgb, var(--acc100p), var(--wht100p) 60%);
+    --color-accent-active: color-mix(in srgb, var(--acc100p), var(--wht100p) 70%);
+    --color-accent-soft: var(--acc50p);
+    --color-on-accent: var(--blk100p);
     --color-danger: #f2867d;
     --color-danger-soft: #3d1f1c;
     --color-danger-soft-active: #4f2824;
-    --color-image-bg: #2c2b28;
-    --color-overlay: rgb(0 0 0 / 0.6);
-    --color-shadow: rgb(0 0 0 / 0.4);
-    --border-color: #3a3834;
-    --border-color-hover: #5a5750;
+    --color-price-up-hover: color-mix(in srgb, var(--color-danger), var(--wht100p) 10%);
+    --color-image-bg: var(--wht10p);
+    --color-overlay: var(--blk50p);
+    --color-shadow: var(--blk50p);
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --border-color: var(--wht10p);
+    --border-color-hover: var(--wht50p);
   }
 }
 
@@ -190,10 +216,10 @@ a:active {
 .input {
   width: 100%;
   min-height: 32px;
-  padding: 6px 8px;
+  padding: 8px;
   border: var(--border);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--blk5p);
   color: var(--color-text);
   font: inherit;
 }
@@ -206,16 +232,42 @@ a:active {
   outline-offset: 0;
 }
 
+/* Own chevron instead of the native one, which hugs the right edge. */
 select.input {
+  appearance: none;
+  padding-right: 40px;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
   cursor: pointer;
 }
 
 select.input:active {
-  background: var(--color-surface-active);
+  background-color: var(--color-surface-active);
 }
 
 textarea.input {
   resize: vertical;
+}
+
+/* An input with a leading icon; the wrapper takes the input's place in the layout. */
+.input-icon {
+  position: relative;
+  display: flex;
+}
+
+.input-icon > svg {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  translate: 0 -50%;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.input-icon > .input {
+  padding-left: 40px;
 }
 
 .input--currency {

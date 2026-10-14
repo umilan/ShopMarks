@@ -6,10 +6,12 @@ import {
   formatPrice,
   getState,
   importData,
+  loadRates,
   onChange,
   priceChange,
   removeProduct,
   renameList,
+  toEuro,
   updateProduct,
 } from './store.js';
 
@@ -17,11 +19,12 @@ const $ = (id) => document.getElementById(id);
 const PRICE_CHECKS_AT_ONCE = 4;
 const TOAST_MS = 5000;
 
-const comparePrice = (a, b) => (a.price ?? Infinity) - (b.price ?? Infinity) || 0;
+const euros = (product) => toEuro(product.price, product.currency, rates);
+const comparePrice = (a, b) => (euros(a) ?? Infinity) - (euros(b) ?? Infinity) || 0;
 const SORTS = {
   newest: (a, b) => b.createdAt - a.createdAt,
   'price-asc': comparePrice,
-  'price-desc': (a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity) || 0,
+  'price-desc': (a, b) => (euros(b) ?? -Infinity) - (euros(a) ?? -Infinity) || 0,
   drop: (a, b) => (priceChange(a)?.percent ?? 0) - (priceChange(b)?.percent ?? 0),
   store: (a, b) => a.store.localeCompare(b.store),
 };
@@ -36,6 +39,7 @@ const ICONS = {
 // listId null means "all items".
 const view = { listId: null, query: '', sort: 'newest' };
 let state = { products: [], lists: [] };
+let rates = {};
 let toastTimer;
 let backup = { state: 'off' };
 
@@ -73,8 +77,49 @@ document.addEventListener('keydown', (event) => {
   $('menu-toggle').focus();
 });
 
+// The sticky rows sit under the ones above them, whose heights change as they wrap.
+const stickyRows = new ResizeObserver(() => {
+  document.body.style.setProperty('--topbar-height', `${document.querySelector('.topbar').offsetHeight}px`);
+  document.body.style.setProperty('--sidebar-height', `${document.querySelector('.sidebar').offsetHeight}px`);
+});
+stickyRows.observe(document.querySelector('.topbar'));
+stickyRows.observe(document.querySelector('.sidebar'));
+
+// On small screens the list picker and sorting move up into the top bar.
+const narrow = matchMedia('(max-width: 800px)');
+const placeControls = () => {
+  if (narrow.matches) {
+    $('search-field').before($('list-picker'), $('sort-field'));
+  } else {
+    $('lists').after($('list-picker'));
+    $('rename-list').before($('sort-field'));
+  }
+};
+narrow.addEventListener('change', placeControls);
+placeControls();
+
+// On small screens search is an icon that opens the field in place of the pickers.
+$('search-toggle').addEventListener('click', () => setSearch($('search-toggle').getAttribute('aria-expanded') !== 'true'));
+$('search').addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !narrow.matches) return;
+  setSearch(false);
+  $('search-toggle').focus();
+});
+
+const NEW_LIST = 'new-list';
+$('list-picker').addEventListener('change', (event) => {
+  if (event.target.value !== NEW_LIST) return setView({ listId: event.target.value || null });
+  // Not a real list: snap back to the current one and ask for a name.
+  event.target.value = view.listId ?? '';
+  newList();
+});
+
 onChange(refresh);
 refresh();
+loadRates().then((loaded) => {
+  rates = loaded;
+  render();
+});
 
 // Folder access is a Chromium feature; other browsers keep Export and Import only.
 if ('showDirectoryPicker' in globalThis) {
@@ -83,6 +128,18 @@ if ('showDirectoryPicker' in globalThis) {
   refreshBackup().then(() => {
     if (backup.state === 'paused') toast(`Backup to “${backup.name}” is paused. Open the ⋯ menu and choose Resume backup.`);
   });
+}
+
+function setSearch(open) {
+  $('search-toggle').setAttribute('aria-expanded', String(open));
+  document.querySelector('.topbar').classList.toggle('topbar--searching', open);
+  if (open) {
+    $('search').focus();
+  } else if ($('search').value) {
+    // Closing clears the query, so no hidden filter is left behind.
+    $('search').value = '';
+    setView({ query: '' });
+  }
 }
 
 function setMenu(open) {
@@ -123,7 +180,16 @@ function render() {
     listLink(null, 'All Items', state.products.length),
     ...state.lists.map((list) => listLink(list.id, list.name, state.products.filter((p) => p.listId === list.id).length)),
   );
+  // Small screens pick the list from a dropdown instead of the row of tabs.
+  $('list-picker').replaceChildren(
+    new Option(`All Items (${state.products.length})`, ''),
+    ...state.lists.map((list) => new Option(`${list.name} (${state.products.filter((p) => p.listId === list.id).length})`, list.id)),
+    document.createElement('hr'),
+    new Option('New list…', NEW_LIST),
+  );
+  $('list-picker').value = view.listId ?? '';
 
+  $('lists-title').textContent = `Lists (${state.lists.length})`;
   $('list-title').textContent = `${currentList?.name ?? 'All Items'} (${products.length})`;
   // The built-in default list is not stored, so it can't be renamed or deleted.
   const editable = Boolean(currentList?.createdAt);
@@ -171,11 +237,6 @@ function card(product) {
       'div',
       { className: 'card__media' },
       image,
-      change &&
-        el('p', {
-          className: change.percent < 0 ? 'badge badge--down' : 'badge badge--up',
-          textContent: `${change.percent < 0 ? '▼' : '▲'} ${Math.abs(change.percent).toFixed(0)}% · was ${formatPrice(change.from, product.currency)}`,
-        }),
       el(
         'div',
         { className: 'card__actions' },
@@ -191,7 +252,17 @@ function card(product) {
       el(
         'div',
         { className: 'card__meta' },
-        product.price != null && el('p', { className: 'card__price', textContent: formatPrice(product.price, product.currency) }),
+        el(
+          'p',
+          { className: 'card__pricing' },
+          el('span', { className: 'card__price', textContent: product.price != null ? formatPrice(product.price, product.currency, rates) : 'N/A' }),
+          change &&
+            el('span', {
+              className: change.percent < 0 ? 'card__change card__change--down' : 'card__change card__change--up',
+              textContent: `${change.percent < 0 ? '▼' : '▲'} ${Math.abs(change.percent).toFixed(0)}%`,
+              title: `Was ${formatPrice(change.from, product.currency, rates)}`,
+            }),
+        ),
         el('p', { className: 'card__store', textContent: product.store }),
       ),
     ),

@@ -1,5 +1,5 @@
 import { extractFromTab } from './page.js';
-import { DEFAULT_LIST_ID, createList, findByUrl, formatPrice, getState, removeProduct, saveProduct, storeOf } from './store.js';
+import { DEFAULT_LIST_ID, createList, findByUrl, formatPrice, getState, loadRates, removeProduct, saveProduct, storeOf } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 const NEW_LIST = 'new';
@@ -48,8 +48,9 @@ async function init() {
   showImage(0);
   showSavedState();
   if (saved?.price != null && draft.price != null && saved.price !== draft.price) {
-    const before = formatPrice(saved.price, saved.currency);
-    const now = formatPrice(draft.price, draft.currency ?? saved.currency);
+    const rates = await loadRates();
+    const before = formatPrice(saved.price, saved.currency, rates);
+    const now = formatPrice(draft.price, draft.currency ?? saved.currency, rates);
     $('status').textContent = `Price changed since you saved it: ${before} → ${now}. Update to record it.`;
   }
 
