@@ -12,7 +12,7 @@ startBackup();
 chrome.runtime.onInstalled.addListener(() => {
   // Menus survive updates, so start clean instead of failing on a duplicate id.
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: MENU_ID, title: 'Save this product to Saver', contexts: ['page', 'image'] });
+    chrome.contextMenus.create({ id: MENU_ID, title: 'Save this product to ShopMarks', contexts: ['page', 'image'] });
   });
 });
 

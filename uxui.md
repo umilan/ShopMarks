@@ -39,21 +39,22 @@ Every color comes from this palette, defined at the top of [ui.css](extension/sr
 | `--acc50p` | `rgba(25,100,50,0.5)` |
 | `--acc100p` | `rgb(25,100,50)` |
 
-- Never write a raw color into a component. Prefer the semantic names (`--color-text`, `--color-surface`, `--color-price-down`, …), which ui.css builds from the palette; a palette step used directly (like the `--blk5p` fill on inputs) is fine for neutral fills.
+- Components use only the semantic names (`--color-text`, `--color-field`, `--color-price-down`, …), never a palette step or a raw color. ui.css defines each one as `light-dark(light value, dark value)`, so a palette step used directly would not switch with the theme.
 - Light mode uses the black steps where dark mode uses the white ones (e.g. `--blk5p` hover becomes `--wht5p`).
+- The one deliberate exception is the note stripe drawn over product images, which looks the same in both themes.
 - Where a color must be opaque (sticky rows that content scrolls under), mix palette values with `color-mix()` instead of using a translucent step.
 - The only exceptions are the danger reds, since the palette has no red, and the per-item placeholder hue.
 
 ## Interaction states
 
-Every control reacts the same way. Hover and press darken the fill one step each; the border keeps its color.
+Every control reacts the same way. Inputs and buttons have no visible border, in any state; hover, press and open only darken the fill one step each. Keyboard focus shows the focus outline.
 
 | Control rests on | Hover | Press / open |
 |---|---|---|
-| Nothing (plain: ghost buttons, desktop sort, mobile top-bar controls) | `--blk5p` fill + normal border | `--blk10p` |
+| Nothing (plain: ghost buttons, desktop sort, mobile top-bar controls) | `--blk5p` | `--blk10p` |
 | White (regular buttons, list rows, menu items) | `--blk5p` | `--blk10p` |
-| `--blk5p` (fields, top-bar icon buttons) | `--blk10p` | `--blk10p` |
+| `--color-field` (fields, top-bar icon buttons) | `--blk10p` | `--blk10p` |
 
 - In dark mode the same steps use the white palette (`--wht5p`, `--wht10p`) through the semantic `--color-surface-hover` / `--color-surface-active` tokens.
-- Borders never darken on hover. The selected state (current list) uses the accent tint, not a gray step.
+- Keep the 1px transparent border so controls stay the same size as bordered elements. The selected state (current list) uses the accent tint, not a gray step.
 - Exceptions with their own colors: primary buttons (accent shades), danger buttons (red), price changes (`--color-price-*-hover`), and cards, which lift with a shadow instead of changing fill.

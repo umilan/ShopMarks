@@ -1,5 +1,5 @@
 import { extractFromTab } from './page.js';
-import { DEFAULT_LIST_ID, createList, findByUrl, formatPrice, getState, loadRates, removeProduct, saveProduct, storeOf } from './store.js';
+import { DEFAULT_LIST_ID, NO_LIST_NAME, createList, findByUrl, formatPrice, getState, loadRates, removeProduct, saveProduct, storeOf } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 const NEW_LIST = 'new';
@@ -27,7 +27,7 @@ async function init() {
     draft = await extractFromTab(tab.id);
   } catch {
     // Browser pages, the Web Store and PDFs don't allow scripts.
-    $('message').textContent = 'Open a product page in an online shop, then click Saver to save it.';
+    $('message').textContent = 'Open a product page in an online shop, then click ShopMarks to save it.';
     return;
   }
 
@@ -41,6 +41,7 @@ async function init() {
   $('store').textContent = storeOf(draft.url);
   $('hint').hidden = draft.isProduct || Boolean(saved);
 
+  $('list').append(new Option(NO_LIST_NAME, DEFAULT_LIST_ID));
   for (const list of lists) $('list').append(new Option(list.name, list.id));
   $('list').append(new Option('+ New list', NEW_LIST));
   $('list').value = saved?.listId ?? DEFAULT_LIST_ID;

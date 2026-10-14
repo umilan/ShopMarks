@@ -1,9 +1,10 @@
 // All persistence goes through this module. Records carry ids and timestamps
 // so a sync backend can replace chrome.storage later without touching the UI.
 
+// Items in no list carry this id; they show under All Items only.
 export const DEFAULT_LIST_ID = 'default';
+export const NO_LIST_NAME = 'No list';
 
-const DEFAULT_LIST = { id: DEFAULT_LIST_ID, name: 'Saved' };
 const TRACKING_PARAM = /^(utm_\w+|gclid|fbclid|msclkid|mc_[ce]id|_ga)$/i;
 const EDITABLE_FIELDS = ['title', 'image', 'listId', 'note'];
 const LOCALE = 'sk-SK';
@@ -82,7 +83,7 @@ export function priceChange(product) {
 
 export async function getState() {
   const { products = [], lists = [] } = await chrome.storage.local.get(['products', 'lists']);
-  return { products, lists: [DEFAULT_LIST, ...lists] };
+  return { products, lists };
 }
 
 export function onChange(callback) {
@@ -181,7 +182,7 @@ export function renameList(id, name) {
   });
 }
 
-// Products in a deleted list are kept and moved to the default list.
+// Products in a deleted list are kept, in no list.
 export function deleteList(id) {
   return mutate((data) => {
     data.lists = data.lists.filter((l) => l.id !== id);

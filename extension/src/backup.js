@@ -1,7 +1,7 @@
 // Keeps a copy of everything saved as one JSON file in a folder the user picked
 // (a Dropbox folder, for example). chrome.storage stays the source of truth;
 // the file is rewritten after every change and is in the Export format, so
-// Import… can read it back.
+// Import can read it back.
 
 import { exportData, onChange } from './store.js';
 

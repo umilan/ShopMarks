@@ -14,38 +14,44 @@
   --acc10p: rgba(25,100,50,0.1);
   --acc50p: rgba(25,100,50,0.5);
   --acc100p: rgb(25,100,50);
-/* A drop is good news (accent), a rise is bad news (danger). */
+
+  /* Semantic colors, built only from the palette above: light-dark(light value, dark value).
+     The theme is color-scheme, set below from the system or the switch in the settings menu.
+     Opaque mixes are for surfaces that cards scroll under (sticky rows), where alpha would show through. */
+  --color-bg: light-dark(color-mix(in srgb, var(--blk100p) 5%, var(--wht100p)), color-mix(in srgb, var(--wht100p) 5%, var(--blk100p)));
+  --color-surface: light-dark(var(--wht100p), color-mix(in srgb, var(--wht100p) 10%, var(--blk100p)));
+  --color-surface-hover: light-dark(var(--blk5p), var(--wht5p));
+  --color-surface-active: light-dark(var(--blk10p), var(--wht10p));
+  /* Resting fill of fields and filled icon buttons; the same step as hover. */
+  --color-field: light-dark(var(--blk5p), var(--wht5p));
+  --color-text: light-dark(var(--blk100p), var(--wht100p));
+  --color-text-muted: light-dark(var(--blk50p), var(--wht50p));
+  /* The plain accent is too dark to read on black, so dark mode lightens it. */
+  --color-accent: light-dark(var(--acc100p), color-mix(in srgb, var(--acc100p), var(--wht100p) 50%));
+  --color-accent-hover: light-dark(color-mix(in srgb, var(--acc100p), var(--blk100p) 10%), color-mix(in srgb, var(--acc100p), var(--wht100p) 60%));
+  --color-accent-active: light-dark(color-mix(in srgb, var(--acc100p), var(--blk100p) 50%), color-mix(in srgb, var(--acc100p), var(--wht100p) 70%));
+  --color-accent-soft: light-dark(var(--acc10p), var(--acc50p));
+  --color-on-accent: light-dark(var(--wht100p), var(--blk100p));
+  /* The palette has no red, so danger keeps its own colors. */
+  --color-danger: light-dark(#b3261e, #f2867d);
+  --color-danger-soft: light-dark(#fbe9e7, #3d1f1c);
+  --color-danger-soft-active: light-dark(#f6d5d1, #4f2824);
+  --color-image-bg: light-dark(var(--blk10p), var(--wht10p));
+  --color-on-placeholder: var(--wht100p);
+  --color-overlay: var(--blk50p);
+  --color-shadow: light-dark(var(--blk10p), var(--blk50p));
+
+  /* A drop is good news (accent), a rise is bad news (danger). */
   --color-price-down: var(--color-accent);
   --color-price-down-hover: var(--color-accent-hover);
   --color-price-up: var(--color-danger);
-  --color-price-up-hover: color-mix(in srgb, var(--color-danger), var(--blk100p) 10%);
+  --color-price-up-hover: light-dark(color-mix(in srgb, var(--color-danger), var(--blk100p) 10%), color-mix(in srgb, var(--color-danger), var(--wht100p) 10%));
 
-  /* Semantic colors, built only from the palette above. Opaque mixes are for
-     surfaces that cards scroll under (sticky rows), where alpha would show through. */
-  --color-bg: color-mix(in srgb, var(--blk100p) 5%, var(--wht100p));
-  --color-surface: var(--wht100p);
-  --color-surface-hover: var(--blk5p);
-  --color-surface-active: var(--blk10p);
-  --color-text: var(--blk100p);
-  --color-text-muted: var(--blk50p);
-  --color-accent: var(--acc100p);
-  --color-accent-hover: color-mix(in srgb, var(--acc100p), var(--blk100p) 10%);
-  --color-accent-active: color-mix(in srgb, var(--acc100p), var(--blk100p) 50%);
-  --color-accent-soft: var(--acc10p);
-  --color-on-accent: var(--wht100p);
-  /* The palette has no red, so danger keeps its own colors. */
-  --color-danger: #b3261e;
-  --color-danger-soft: #fbe9e7;
-  --color-danger-soft-active: #f6d5d1;
-  --color-image-bg: var(--blk10p);
-  --color-on-placeholder: var(--wht100p);
-  --color-overlay: var(--blk50p);
-  --color-shadow: var(--blk10p);
-
-  /* SVG data URIs can't read variables; the stroke matches --blk50p. */
+  /* SVG data URIs can't read variables, and light-dark() takes only colors, so the
+     chevron is swapped with the theme below; its stroke matches --blk50p / --wht50p. */
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
-  --border-color: var(--blk10p);
+  --border-color: light-dark(var(--blk10p), var(--wht10p));
   --border: 1px solid var(--border-color);
   --border-focus: 2px solid var(--color-accent);
 
@@ -55,30 +61,23 @@
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Follows the system unless the switch picked a theme (data-theme, set by theme.js). */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: color-mix(in srgb, var(--wht100p) 5%, var(--blk100p));
-    --color-surface: color-mix(in srgb, var(--wht100p) 10%, var(--blk100p));
-    --color-surface-hover: var(--wht5p);
-    --color-surface-active: var(--wht10p);
-    --color-text: var(--wht100p);
-    --color-text-muted: var(--wht50p);
-    /* The plain accent is too dark to read on black, so dark mode lightens it. */
-    --color-accent: color-mix(in srgb, var(--acc100p), var(--wht100p) 50%);
-    --color-accent-hover: color-mix(in srgb, var(--acc100p), var(--wht100p) 60%);
-    --color-accent-active: color-mix(in srgb, var(--acc100p), var(--wht100p) 70%);
-    --color-accent-soft: var(--acc50p);
-    --color-on-accent: var(--blk100p);
-    --color-danger: #f2867d;
-    --color-danger-soft: #3d1f1c;
-    --color-danger-soft-active: #4f2824;
-    --color-price-up-hover: color-mix(in srgb, var(--color-danger), var(--wht100p) 10%);
-    --color-image-bg: var(--wht10p);
-    --color-overlay: var(--blk50p);
-    --color-shadow: var(--blk50p);
+  :root:not([data-theme="light"]) {
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    --border-color: var(--wht10p);
   }
+}
+
+:root[data-theme="dark"] {
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 *,
@@ -138,7 +137,8 @@ a:active {
   gap: 8px;
   min-height: 32px;
   padding: 0 16px;
-  border: var(--border);
+  /* No visible border; transparent keeps the size the same as bordered elements. */
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
@@ -148,7 +148,7 @@ a:active {
   cursor: pointer;
 }
 
-/* Hover and press darken the fill one step each; the border never changes color.
+/* Hover and press darken the fill one step each; no border appears.
    See "Interaction states" in uxui.md. */
 .button:hover {
   background: var(--color-surface-hover);
@@ -180,13 +180,7 @@ a:active {
 }
 
 .button--ghost {
-  border-color: transparent;
   background: transparent;
-}
-
-/* Plain controls show their field on hover: fill plus the normal border. */
-.button--ghost:hover {
-  border-color: var(--border-color);
 }
 
 .button--danger {
@@ -194,7 +188,6 @@ a:active {
 }
 
 .button--danger:hover {
-  border-color: var(--color-danger);
   background: var(--color-danger-soft);
 }
 
@@ -221,9 +214,10 @@ a:active {
   width: 100%;
   min-height: 32px;
   padding: 8px;
-  border: var(--border);
+  /* Like buttons: no visible border; focus shows the outline. */
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--blk5p);
+  background: var(--color-field);
   color: var(--color-text);
   font: inherit;
 }

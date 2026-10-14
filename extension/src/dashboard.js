@@ -1,5 +1,7 @@
 import { BACKUP_FILE, backupStatus, chooseFolder, forgetFolder, startBackup, writeBackup } from './backup.js';
 import {
+  DEFAULT_LIST_ID,
+  NO_LIST_NAME,
   createList,
   deleteList,
   exportData,
@@ -55,12 +57,18 @@ $('import-file').addEventListener('change', importFromFile);
 $('backup-choose').addEventListener('click', chooseBackupFolder);
 $('backup-resume').addEventListener('click', resumeBackup);
 $('backup-stop').addEventListener('click', stopBackup);
+$('theme-toggle').addEventListener('click', toggleTheme);
 
-$('menu-toggle').addEventListener('click', () => setMenu($('menu').hidden));
-// Choosing an item closes the menu, and so does a click anywhere outside it.
-$('menu').addEventListener('click', () => setMenu(false));
+// Each .menu is a toggle plus a sheet. Choosing an item closes it, and so does a click
+// anywhere outside it; opening one menu closes the others.
+for (const menu of document.querySelectorAll('.menu')) {
+  menu.querySelector('.menu__toggle').addEventListener('click', () => setMenu(menu, menu.querySelector('.menu__sheet').hidden));
+  menu.querySelector('.menu__sheet').addEventListener('click', () => setMenu(menu, false));
+}
 document.addEventListener('click', (event) => {
-  if (!event.target.closest('.menu')) setMenu(false);
+  for (const menu of document.querySelectorAll('.menu')) {
+    if (!menu.contains(event.target)) setMenu(menu, false);
+  }
 });
 // Without hover (touch screens) a tap opens a note; a tap anywhere else closes it.
 document.addEventListener('click', (event) => {
@@ -72,9 +80,10 @@ document.addEventListener('click', (event) => {
   tapped?.classList.toggle('card__note--open');
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || $('menu').hidden) return;
-  setMenu(false);
-  $('menu-toggle').focus();
+  const open = document.querySelector('.menu:has(.menu__sheet:not([hidden]))');
+  if (event.key !== 'Escape' || !open) return;
+  setMenu(open, false);
+  open.querySelector('.menu__toggle').focus();
 });
 
 // The sticky rows sit under the ones above them, whose heights change as they wrap.
@@ -92,7 +101,7 @@ const placeControls = () => {
     $('search-field').before($('list-picker'), $('sort-field'));
   } else {
     $('lists').after($('list-picker'));
-    $('rename-list').before($('sort-field'));
+    $('list-menu').before($('sort-field'));
   }
 };
 narrow.addEventListener('change', placeControls);
@@ -121,12 +130,17 @@ loadRates().then((loaded) => {
   render();
 });
 
+// The switch offers the opposite of what is showing, which follows the system until it is used.
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+systemDark.addEventListener('change', showThemeSwitch);
+showThemeSwitch();
+
 // Folder access is a Chromium feature; other browsers keep Export and Import only.
 if ('showDirectoryPicker' in globalThis) {
   $('backup-menu').hidden = false;
   startBackup();
   refreshBackup().then(() => {
-    if (backup.state === 'paused') toast(`Backup to “${backup.name}” is paused. Open the ⋯ menu and choose Resume backup.`);
+    if (backup.state === 'paused') toast(`Backup to “${backup.name}” is paused. Open the settings menu and choose Resume backup.`);
   });
 }
 
@@ -142,9 +156,9 @@ function setSearch(open) {
   }
 }
 
-function setMenu(open) {
-  $('menu').hidden = !open;
-  $('menu-toggle').setAttribute('aria-expanded', String(open));
+function setMenu(menu, open) {
+  menu.querySelector('.menu__sheet').hidden = !open;
+  menu.querySelector('.menu__toggle').setAttribute('aria-expanded', String(open));
 }
 
 async function refresh() {
@@ -185,22 +199,19 @@ function render() {
     new Option(`All Items (${state.products.length})`, ''),
     ...state.lists.map((list) => new Option(`${list.name} (${state.products.filter((p) => p.listId === list.id).length})`, list.id)),
     document.createElement('hr'),
-    new Option('New list…', NEW_LIST),
+    new Option('New list', NEW_LIST),
   );
   $('list-picker').value = view.listId ?? '';
 
   $('lists-title').textContent = `Lists (${state.lists.length})`;
   $('list-title').textContent = `${currentList?.name ?? 'All Items'} (${products.length})`;
-  // The built-in default list is not stored, so it can't be renamed or deleted.
-  const editable = Boolean(currentList?.createdAt);
-  $('rename-list').hidden = !editable;
-  $('delete-list').hidden = !editable;
+  $('list-menu').hidden = !currentList;
 
   $('grid').replaceChildren(...products.map(card));
   $('empty').hidden = products.length > 0;
   $('empty').textContent = state.products.length
     ? 'Nothing here matches.'
-    : 'Nothing saved yet. Open a product page in any online shop and click the Saver icon in the toolbar.';
+    : 'Nothing saved yet. Open a product page in any online shop and click the ShopMarks icon in the toolbar.';
 }
 
 function listLink(id, name, count) {
@@ -240,8 +251,8 @@ function card(product) {
       el(
         'div',
         { className: 'card__actions' },
-        iconButton('Edit…', ICONS.edit, () => editProduct(product)),
-        iconButton('Delete…', ICONS.delete, () => confirmDelete(product), 'button--danger'),
+        iconButton('Edit', ICONS.edit, () => editProduct(product)),
+        iconButton('Delete', ICONS.delete, () => confirmDelete(product), 'button--danger'),
       ),
       product.note && el('p', { className: 'card__note', textContent: product.note }),
     ),
@@ -282,6 +293,12 @@ function iconButton(label, icon, onclick, modifier = '') {
 
 // Dialogs
 
+// Cancel is a plain button, not a submit one: pressing Enter in a field submits with the
+// form's first submit button, which is then Save rather than Cancel.
+for (const cancel of document.querySelectorAll('.dialog [value="cancel"]')) {
+  cancel.addEventListener('click', () => cancel.closest('dialog').close('cancel'));
+}
+
 function ask(dialog) {
   dialog.returnValue = '';
   dialog.showModal();
@@ -307,7 +324,10 @@ async function editProduct(product) {
   $('edit-price').value = product.price ?? '';
   $('edit-currency').value = product.currency ?? '';
   $('edit-note').value = product.note;
-  $('edit-list').replaceChildren(...state.lists.map((list) => new Option(list.name, list.id)));
+  $('edit-list').replaceChildren(
+    new Option(NO_LIST_NAME, DEFAULT_LIST_ID),
+    ...state.lists.map((list) => new Option(list.name, list.id)),
+  );
   $('edit-list').value = product.listId;
   if (!(await ask($('edit-dialog')))) return;
   await updateProduct(product.id, {
@@ -352,11 +372,11 @@ async function checkPrices() {
   // Must stay the first await: the permission prompt needs the click that got us here.
   const origins = [...new Set(targets.map((product) => `${new URL(product.url).origin}/*`))];
   const granted = await chrome.permissions.request({ origins }).catch(() => false);
-  if (!granted) return toast('Saver needs access to those shops to read their prices.');
+  if (!granted) return toast('ShopMarks needs access to those shops to read their prices.');
 
   const button = $('check-prices');
   button.disabled = true;
-  button.textContent = 'Checking';
+  button.querySelector('.menu__label').textContent = 'Updating prices';
   let changed = 0;
   let unreadable = 0;
   const pending = [...targets];
@@ -373,7 +393,7 @@ async function checkPrices() {
   };
   await Promise.all(Array.from({ length: PRICE_CHECKS_AT_ONCE }, worker));
   button.disabled = false;
-  button.textContent = 'Check prices';
+  button.querySelector('.menu__label').textContent = 'Update prices';
 
   const parts = [`Checked ${targets.length}`, `${changed} changed`];
   if (unreadable) parts.push(`${unreadable} could not be read`);
@@ -411,7 +431,7 @@ async function importFromFile(event) {
     const added = await importData(JSON.parse(await file.text()));
     toast(`Imported ${added} ${added === 1 ? 'item' : 'items'}.`);
   } catch {
-    toast('That file is not a Saver export.');
+    toast('That file is not a ShopMarks export.');
   }
 }
 
@@ -441,7 +461,7 @@ async function chooseBackupFolder() {
     await writeBackup();
   } catch {
     await refreshBackup();
-    return toast('Saver could not write to that folder.');
+    return toast('ShopMarks could not write to that folder.');
   }
   await refreshBackup();
   const restored = added ? ` ${added} ${added === 1 ? 'item' : 'items'} from the backup already there ${added === 1 ? 'was' : 'were'} added.` : '';
@@ -460,6 +480,27 @@ async function stopBackup() {
   await forgetFolder();
   await refreshBackup();
   toast(`Backup stopped. ${BACKUP_FILE} stays in the folder.`);
+}
+
+// Theme (applied on load by theme.js)
+
+function currentTheme() {
+  return document.documentElement.dataset.theme ?? (systemDark.matches ? 'dark' : 'light');
+}
+
+function toggleTheme() {
+  const theme = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {}
+  showThemeSwitch();
+}
+
+function showThemeSwitch() {
+  const dark = currentTheme() === 'dark';
+  $('theme-toggle').dataset.target = dark ? 'light' : 'dark';
+  $('theme-toggle').querySelector('.menu__label').textContent = dark ? 'Light mode' : 'Dark mode';
 }
 
 function toast(text) {

@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Saver</title>
+  <title>ShopMarks</title>
   <link rel="icon" href="../icons/icon32.png">
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <img src="../icons/icon48.png" width="32" height="32" alt="">
-      <h1 class="brand__name">Saver</h1>
+      <img src="../icons/icon48.png" width="24" height="24" alt="">
+      <h1 class="brand__name">ShopMarks</h1>
     </div>
     <div id="search-field" class="input-icon topbar__search">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -27,14 +28,15 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
       <div id="menu" class="menu__sheet" role="menu" hidden>
-        <button id="check-prices" class="menu__item" type="button" role="menuitem">Check prices</button>
-        <button id="export" class="menu__item" type="button" role="menuitem">Export</button>
-        <button id="import" class="menu__item" type="button" role="menuitem">Import…</button>
+        <button id="check-prices" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="menu__label">Update prices</span></button>
+        <button id="export" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span class="menu__label">Export</span></button>
+        <button id="import" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span class="menu__label">Import</span></button>
+        <button id="theme-toggle" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="theme-icon-dark"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g><g class="theme-icon-light"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></svg><span class="menu__label">Dark mode</span></button>
         <div id="backup-menu" class="menu__group" hidden>
           <p id="backup-status" class="menu__note muted" hidden></p>
-          <button id="backup-resume" class="menu__item" type="button" role="menuitem" hidden>Resume backup</button>
-          <button id="backup-choose" class="menu__item" type="button" role="menuitem">Backup folder…</button>
-          <button id="backup-stop" class="menu__item" type="button" role="menuitem" hidden>Stop backup</button>
+          <button id="backup-resume" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l14 9-14 9z"/></svg><span class="menu__label">Resume backup</span></button>
+          <button id="backup-choose" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="menu__label">Backup folder</span></button>
+          <button id="backup-stop" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg><span class="menu__label">Stop backup</span></button>
         </div>
       </div>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
@@ -45,7 +47,7 @@
     <nav class="sidebar" aria-label="Lists">
       <div class="sidebar__head">
         <h2 id="lists-title" class="sidebar__title"></h2>
-        <button id="new-list" class="button button--ghost sidebar__new" type="button" title="New list…" aria-label="New list…">
+        <button id="new-list" class="button button--ghost sidebar__new" type="button" title="New list" aria-label="New list">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         </button>
       </div>
@@ -67,8 +69,15 @@
               <option value="store">Shop A–Z</option>
             </select>
           </div>
-          <button id="rename-list" class="button button--ghost" type="button">Rename…</button>
-          <button id="delete-list" class="button button--ghost button--danger" type="button">Delete list…</button>
+          <div id="list-menu" class="menu">
+            <button id="list-menu-toggle" class="button button--ghost menu__toggle list-menu__toggle" type="button" title="List actions" aria-label="List actions" aria-haspopup="menu" aria-expanded="false" aria-controls="list-menu-sheet">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+            </button>
+            <div id="list-menu-sheet" class="menu__sheet" role="menu" hidden>
+              <button id="rename-list" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></svg><span class="menu__label">Rename</span></button>
+              <button id="delete-list" class="menu__item menu__item--danger" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg><span class="menu__label">Delete list</span></button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -103,7 +112,7 @@
         <textarea id="edit-note" class="input" rows="3"></textarea>
       </label>
       <div class="dialog__actions">
-        <button class="button" value="cancel" formnovalidate>Cancel</button>
+        <button class="button" type="button" value="cancel">Cancel</button>
         <button class="button button--primary" value="ok">Save</button>
       </div>
     </form>
@@ -117,7 +126,7 @@
         <input id="name-input" class="input" maxlength="60" autocomplete="off" required>
       </label>
       <div class="dialog__actions">
-        <button class="button" value="cancel" formnovalidate>Cancel</button>
+        <button class="button" type="button" value="cancel">Cancel</button>
         <button class="button button--primary" value="ok">Save</button>
       </div>
     </form>
@@ -128,7 +137,7 @@
       <h2 id="confirm-title" class="dialog__title"></h2>
       <p id="confirm-text" class="muted"></p>
       <div class="dialog__actions">
-        <button class="button" value="cancel">Cancel</button>
+        <button class="button" type="button" value="cancel">Cancel</button>
         <button class="button button--danger" value="ok">Delete</button>
       </div>
     </form>
