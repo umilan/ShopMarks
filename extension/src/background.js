@@ -1,13 +1,15 @@
 import { startBackup } from './backup.js';
+import { startDropboxSync } from './sync.js';
 import { extractFromTab } from './page.js';
-import { findByUrl, getState, saveProduct, updateProduct } from './store.js';
+import { findByUrl, getState, saveProduct, setPriceSpot, updateProduct } from './store.js';
 
 const MENU_ID = 'saver-save-page';
 const BADGE_OK = '#1f6f5c';
 const BADGE_ERROR = '#b3261e';
 
-// Keeps the backup file current when no Saver page is open.
+// Keeps the backup file and the Dropbox copy current when no ShopMarks page is open.
 startBackup();
+startDropboxSync();
 
 chrome.runtime.onInstalled.addListener(() => {
   // Menus survive updates, so start clean instead of failing on a duplicate id.
@@ -34,6 +36,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } catch {
     flashBadge(tab.id, '!', BADGE_ERROR);
   }
+});
+
+// The popup's picker found the price on a shop page: remember the spot for that shop and
+// reopen the popup, which then reads the price from there (openPopup needs Chrome 127).
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (message?.type !== 'price-spot' || !sender.tab) return;
+  setPriceSpot(message.url, message.spot)
+    .then(() => chrome.action.openPopup?.())
+    .catch(() => {});
 });
 
 function flashBadge(tabId, text, color) {

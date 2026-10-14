@@ -1,18 +1,26 @@
+import { chosenLists, fillListChoice } from './listchoice.js';
+import { connectDropbox, disconnectDropbox, dropboxConfigured, dropboxStatus, finishDropboxRedirect, startDropboxSync, syncNow } from './sync.js';
 import { BACKUP_FILE, backupStatus, chooseFolder, forgetFolder, startBackup, writeBackup } from './backup.js';
 import {
-  DEFAULT_LIST_ID,
+  CURRENCIES,
+  DEFAULT_CURRENCY,
   NO_LIST_NAME,
   createList,
   deleteList,
   exportData,
+  findByUrl,
   formatPrice,
   getState,
   importData,
+  listsOf,
   loadRates,
   onChange,
   priceChange,
+  priceSpots,
   removeProduct,
+  saveProduct,
   renameList,
+  setCurrency,
   toEuro,
   updateProduct,
 } from './store.js';
@@ -36,11 +44,32 @@ const svg = (paths) =>
 const ICONS = {
   edit: svg('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
   delete: svg('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
+  more: svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),
+  grip: svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>'),
 };
+// Cards ticked with their checkbox; dragging one of them moves them all.
+const selected = new Set();
+// Until this time, redraws slide the cards to their new places (after a drop on a list).
+let animateGridUntil = 0;
 
-// listId null means "all items".
-const view = { listId: null, query: '', sort: 'newest' };
-let state = { products: [], lists: [] };
+// listId null means "all items"; UNSORTED shows the items in no list.
+const UNSORTED = 'unsorted';
+const DRAG_TYPE = 'application/x-shopmarks-item';
+// Running as the web app (PWA, see web.js) rather than inside the extension.
+const WEB = Boolean(globalThis.shopMarksWeb);
+// A drop target shown only while a card is dragged: deletes for good, after asking.
+const TRASH = 'trash';
+// layout: 'grid' of cards or 'list' of rows; remembered per browser.
+const view = { listId: null, query: '', sort: 'newest', layout: savedLayout() };
+
+function savedLayout() {
+  try {
+    return localStorage.getItem('layout') === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+let state = { products: [], lists: [], currency: DEFAULT_CURRENCY };
 let rates = {};
 let toastTimer;
 let backup = { state: 'off' };
@@ -51,6 +80,24 @@ $('new-list').addEventListener('click', newList);
 $('rename-list').addEventListener('click', renameCurrentList);
 $('delete-list').addEventListener('click', deleteCurrentList);
 $('check-prices').addEventListener('click', checkPrices);
+$('add-item').addEventListener('click', addByLink);
+$('dropbox-connect').addEventListener('click', connectToDropbox);
+$('dropbox-sync').addEventListener('click', () => runSync(true));
+$('dropbox-disconnect').addEventListener('click', disconnectFromDropbox);
+// Reading the linked page needs access to its shop, asked for while the Add click still
+// counts as the user's (permissions.request needs that).
+let addPermission = null;
+$('add-dialog').querySelector('form').addEventListener('submit', (event) => {
+  addPermission = null;
+  if (WEB || event.submitter?.value !== 'ok') return;
+  try {
+    const origins = [`${new URL($('add-url').value.trim()).origin}/*`];
+    // Already allowed (e.g. by Update prices) also counts.
+    addPermission = chrome.permissions.request({ origins }).catch(() => chrome.permissions.contains({ origins }));
+  } catch {
+    // Not a link; addByLink says so.
+  }
+});
 $('export').addEventListener('click', exportToFile);
 $('import').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importFromFile);
@@ -58,16 +105,37 @@ $('backup-choose').addEventListener('click', chooseBackupFolder);
 $('backup-resume').addEventListener('click', resumeBackup);
 $('backup-stop').addEventListener('click', stopBackup);
 $('theme-toggle').addEventListener('click', toggleTheme);
+$('view-toggle').addEventListener('click', () => {
+  view.layout = view.layout === 'list' ? 'grid' : 'list';
+  try {
+    localStorage.setItem('layout', view.layout);
+  } catch {}
+  render();
+});
+$('delete-selected').addEventListener('click', () => deleteItems([...selected]));
+$('select-toggle').addEventListener('click', () => {
+  const shown = visibleProducts();
+  if (shown.every((p) => selected.has(p.id))) selected.clear();
+  else for (const product of shown) selected.add(product.id);
+  render();
+});
+$('currency').append(...CURRENCIES.map((code) => new Option(code, code)));
+$('currency').addEventListener('change', (event) => setCurrency(event.target.value));
+$('brand').addEventListener('click', () => WEB || togglePopupPreview());
+$('brand').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  togglePopupPreview();
+});
 
-// Each .menu is a toggle plus a sheet. Choosing an item closes it, and so does a click
-// anywhere outside it; opening one menu closes the others.
-for (const menu of document.querySelectorAll('.menu')) {
-  menu.querySelector('.menu__toggle').addEventListener('click', () => setMenu(menu, menu.querySelector('.menu__sheet').hidden));
-  menu.querySelector('.menu__sheet').addEventListener('click', () => setMenu(menu, false));
-}
+// Each .menu is a toggle plus a sheet (cards make theirs on every redraw, so one handler
+// serves all). The toggle opens or closes its menu; choosing an item closes it, and so
+// does a click anywhere outside; opening one menu closes the others.
 document.addEventListener('click', (event) => {
+  const toggle = event.target.closest('.menu__toggle');
   for (const menu of document.querySelectorAll('.menu')) {
-    if (!menu.contains(event.target)) setMenu(menu, false);
+    if (toggle && menu.contains(toggle)) setMenu(menu, menu.querySelector('.menu__sheet').hidden);
+    else if (!menu.contains(event.target) || event.target.closest('.menu__item')) setMenu(menu, false);
   }
 });
 // Without hover (touch screens) a tap opens a note; a tap anywhere else closes it.
@@ -101,7 +169,8 @@ const placeControls = () => {
     $('search-field').before($('list-picker'), $('sort-field'));
   } else {
     $('lists').after($('list-picker'));
-    $('list-menu').before($('sort-field'));
+    // Sort first, then the grid / list switch.
+    $('view-toggle').before($('sort-field'));
   }
 };
 narrow.addEventListener('change', placeControls);
@@ -135,6 +204,25 @@ const systemDark = matchMedia('(prefers-color-scheme: dark)');
 systemDark.addEventListener('change', showThemeSwitch);
 showThemeSwitch();
 
+// The web app cannot read shop pages or open the toolbar popup.
+if (WEB) {
+  $('check-prices').hidden = true;
+  $('brand').removeAttribute('role');
+  $('brand').removeAttribute('tabindex');
+  document.querySelector('.brand').style.cursor = 'auto';
+}
+
+// Dropbox: finish a sign-in the web app just came back from, then sync now, whenever the
+// page is shown again, and (in the web app, which has no background worker) after changes.
+finishDropboxRedirect()
+  .then((connected) => connected && toast('Connected to Dropbox.'))
+  .catch(() => toast('Dropbox sign-in did not finish. Try again from the settings menu.'))
+  .finally(() => runSync(false));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') runSync(false);
+});
+if (WEB) startDropboxSync();
+
 // Folder access is a Chromium feature; other browsers keep Export and Import only.
 if ('showDirectoryPicker' in globalThis) {
   $('backup-menu').hidden = false;
@@ -163,7 +251,9 @@ function setMenu(menu, open) {
 
 async function refresh() {
   state = await getState();
-  if (!state.lists.some((list) => list.id === view.listId)) view.listId = null;
+  if (view.listId !== UNSORTED && !state.lists.some((list) => list.id === view.listId)) view.listId = null;
+  // Deleted items drop out of the selection.
+  for (const id of selected) if (!state.products.some((p) => p.id === id)) selected.delete(id);
   render();
 }
 
@@ -178,10 +268,14 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+function countIn(listId) {
+  return state.products.filter((p) => listsOf(p).includes(listId)).length;
+}
+
 function visibleProducts() {
   const query = view.query.trim().toLowerCase();
   return state.products
-    .filter((p) => !view.listId || p.listId === view.listId)
+    .filter((p) => !view.listId || (view.listId === UNSORTED ? !listsOf(p).length : listsOf(p).includes(view.listId)))
     .filter((p) => !query || [p.title, p.store, p.note].some((text) => text?.toLowerCase().includes(query)))
     .sort(SORTS[view.sort]);
 }
@@ -189,25 +283,47 @@ function visibleProducts() {
 function render() {
   const products = visibleProducts();
   const currentList = state.lists.find((list) => list.id === view.listId);
+  const unsortedCount = state.products.filter((p) => !listsOf(p).length).length;
 
   $('lists').replaceChildren(
     listLink(null, 'All Items', state.products.length),
-    ...state.lists.map((list) => listLink(list.id, list.name, state.products.filter((p) => p.listId === list.id).length)),
+    listLink(UNSORTED, NO_LIST_NAME, unsortedCount),
+    ...state.lists.map((list) => listLink(list.id, list.name, countIn(list.id))),
+    trashLink(),
   );
   // Small screens pick the list from a dropdown instead of the row of tabs.
   $('list-picker').replaceChildren(
     new Option(`All Items (${state.products.length})`, ''),
-    ...state.lists.map((list) => new Option(`${list.name} (${state.products.filter((p) => p.listId === list.id).length})`, list.id)),
+    new Option(`${NO_LIST_NAME} (${unsortedCount})`, UNSORTED),
+    ...state.lists.map((list) => new Option(`${list.name} (${countIn(list.id)})`, list.id)),
     document.createElement('hr'),
     new Option('New list', NEW_LIST),
   );
   $('list-picker').value = view.listId ?? '';
+  $('currency').value = state.currency;
 
   $('lists-title').textContent = `Lists (${state.lists.length})`;
-  $('list-title').textContent = `${currentList?.name ?? 'All Items'} (${products.length})`;
-  $('list-menu').hidden = !currentList;
+  // The sidebar already shows which list is open; the heading counts what is shown.
+  // With cards ticked, the heading row is about the selection instead of the list.
+  const selecting = selected.size > 0;
+  $('list-title').textContent = selecting ? `Selected items (${selected.size})` : `Saved items (${products.length})`;
+  document.querySelector('.main-head').classList.toggle('main-head--selecting', selecting);
+  // One button: selects every shown card, or, once they all are, clears the selection.
+  const allShown = products.length > 0 && products.every((p) => selected.has(p.id));
+  $('select-toggle').hidden = !selecting;
+  $('delete-selected').hidden = !selecting;
+  $('select-toggle').textContent = allShown ? 'Select none' : 'Select all';
+  $('list-menu').hidden = !currentList || selecting;
 
+  const before = Date.now() < animateGridUntil ? cardPositions() : null;
   $('grid').replaceChildren(...products.map(card));
+  // Once any card is ticked, every card shows its checkbox and grip.
+  $('grid').classList.toggle('grid--selecting', selected.size > 0);
+  const list = view.layout === 'list';
+  $('grid').classList.toggle('grid--list', list);
+  $('view-toggle').setAttribute('aria-pressed', String(list));
+  $('view-toggle').title = $('view-toggle').ariaLabel = list ? 'Grid view' : 'List view';
+  if (before) rearrange(before);
   $('empty').hidden = products.length > 0;
   $('empty').textContent = state.products.length
     ? 'Nothing here matches.'
@@ -222,7 +338,75 @@ function listLink(id, name, count) {
     el('span', { className: 'list-link__count', textContent: count }),
   );
   link.setAttribute('aria-current', String(view.listId === id));
+  // Lists and Unsorted take dropped cards; All Items is not a place to move to.
+  if (id !== null) {
+    link.dataset.listId = id;
+    link.addEventListener('dragover', (event) => {
+      if (!event.dataTransfer.types.includes(DRAG_TYPE) || link.classList.contains('list-link--disabled')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      link.classList.add('list-link--drop');
+    });
+    link.addEventListener('dragleave', (event) => {
+      if (!link.contains(event.relatedTarget)) link.classList.remove('list-link--drop');
+    });
+    link.addEventListener('drop', (event) => {
+      event.preventDefault();
+      link.classList.remove('list-link--drop');
+      const ids = event.dataTransfer.getData(DRAG_TYPE).split(',');
+      if (id === TRASH) deleteItems(ids);
+      else moveToList(ids, id, name);
+    });
+  }
   return link;
+}
+
+function trashLink() {
+  const link = listLink(TRASH, 'Trash', '');
+  link.classList.add('list-link--trash');
+  link.onclick = null;
+  link.tabIndex = -1;
+  return link;
+}
+
+// Deletes for good after asking; used by the Trash drop target and Delete selected.
+async function deleteItems(ids) {
+  const products = state.products.filter((p) => ids.includes(p.id));
+  if (!products.length) return;
+  const title = products.length === 1 ? 'Delete this item?' : `Delete ${products.length} items?`;
+  const text = products.length === 1 ? `${products[0].title}\n\nThis deletes it for good.` : 'This deletes them for good.';
+  if (!(await confirmAction(title, text))) return;
+  animateGridUntil = Date.now() + 1000;
+  for (const product of products) {
+    await removeProduct(product.id);
+    selected.delete(product.id);
+  }
+  toast(products.length === 1 ? 'Deleted.' : `Deleted ${products.length} items.`);
+}
+
+// A card dropped on a list moves out of the list being viewed and into that one; from All
+// Items or Unsorted it is added, keeping its other lists. Dropped on Unsorted, it leaves
+// every list.
+async function moveToList(productIds, listId, name) {
+  const fromList = view.listId && view.listId !== UNSORTED;
+  // Each update redraws the grid; let those redraws animate.
+  animateGridUntil = Date.now() + 1000;
+  let changed = 0;
+  for (const product of state.products.filter((p) => productIds.includes(p.id))) {
+    const current = listsOf(product);
+    let next;
+    if (listId === UNSORTED) next = [];
+    else if (fromList) next = [...new Set([...current.filter((id) => id !== view.listId), listId])];
+    else next = [...new Set([...current, listId])];
+    if (next.length === current.length && next.every((id) => current.includes(id))) continue;
+    await updateProduct(product.id, { listIds: next });
+    changed += 1;
+  }
+  if (!changed) return toast(`Already in “${name}”.`);
+  selected.clear();
+  render();
+  const what = changed === 1 ? '' : ` ${changed} items`;
+  toast(listId === UNSORTED ? `Moved${what} to Unsorted.` : `${fromList ? 'Moved' : 'Added'}${what} to “${name}”.`);
 }
 
 function card(product) {
@@ -241,9 +425,9 @@ function card(product) {
     showPlaceholder();
   }
 
-  return el(
+  const article = el(
     'article',
-    { className: 'card' },
+    { className: `card${selected.has(product.id) ? ' card--selected' : ''}`, draggable: true },
     el(
       'div',
       { className: 'card__media' },
@@ -254,8 +438,10 @@ function card(product) {
         iconButton('Edit', ICONS.edit, () => editProduct(product)),
         iconButton('Delete', ICONS.delete, () => confirmDelete(product), 'button--danger'),
       ),
+      el('div', { className: 'card__corner' }, el('span', { className: 'card__grip', title: 'Drag to a list', innerHTML: ICONS.grip }), selectBox(product)),
       product.note && el('p', { className: 'card__note', textContent: product.note }),
     ),
+    cardMenu(product),
     el(
       'div',
       { className: 'card__body' },
@@ -266,18 +452,135 @@ function card(product) {
         el(
           'p',
           { className: 'card__pricing' },
-          el('span', { className: 'card__price', textContent: product.price != null ? formatPrice(product.price, product.currency, rates) : 'N/A' }),
+          el('span', { className: 'card__price', textContent: product.price != null ? formatPrice(product.price, product.currency, rates, state.currency) : 'N/A' }),
           change &&
             el('span', {
               className: change.percent < 0 ? 'card__change card__change--down' : 'card__change card__change--up',
               textContent: `${change.percent < 0 ? '▼' : '▲'} ${Math.abs(change.percent).toFixed(0)}%`,
-              title: `Was ${formatPrice(change.from, product.currency, rates)}`,
+              title: `Was ${formatPrice(change.from, product.currency, rates, state.currency)}`,
             }),
         ),
         el('p', { className: 'card__store', textContent: product.store }),
       ),
     ),
   );
+  article.dataset.id = product.id;
+  // Desktop: drag the card onto a list in the sidebar. Its links and picture are not
+  // dragged on their own, so the drag always carries the whole card.
+  for (const part of article.querySelectorAll('a, img')) part.draggable = false;
+  article.addEventListener('dragstart', (event) => {
+    event.dataTransfer.setData(DRAG_TYPE, draggedIds(product).join());
+    event.dataTransfer.effectAllowed = 'move';
+    setDragGhost(event, article);
+    article.classList.add('card--dragging');
+    document.body.classList.add('dragging-card');
+    markDropTargets(draggedIds(product));
+  });
+  article.addEventListener('dragend', () => {
+    article.classList.remove('card--dragging');
+    document.body.classList.remove('dragging-card');
+    for (const link of document.querySelectorAll('.list-link--disabled')) link.classList.remove('list-link--disabled');
+  });
+  return article;
+}
+
+// List view: the hover buttons become one ⋯ menu at the end of the row.
+function cardMenu(product) {
+  const item = (label, icon, onclick, modifier = '') =>
+    el('button', { className: `menu__item ${modifier}`.trim(), type: 'button', role: 'menuitem', innerHTML: `${icon}<span class="menu__label">${label}</span>`, onclick });
+  const sheet = el(
+    'div',
+    { className: 'menu__sheet', role: 'menu', hidden: true },
+    item('Edit', ICONS.edit, () => editProduct(product)),
+    item('Delete', ICONS.delete, () => confirmDelete(product), 'menu__item--danger'),
+  );
+  const toggle = el('button', { className: 'button button--ghost menu__toggle card__menu-toggle', type: 'button', title: 'Actions', ariaLabel: 'Actions', innerHTML: ICONS.more });
+  toggle.setAttribute('aria-haspopup', 'menu');
+  toggle.setAttribute('aria-expanded', 'false');
+  return el('div', { className: 'menu card__menu' }, toggle, sheet);
+}
+
+// Where each card is on screen, by item id.
+function cardPositions() {
+  return new Map([...$('grid').children].map((card) => [card.dataset.id, card.getBoundingClientRect()]));
+}
+
+// After a redraw: cards that stayed slide from their old place to the new one (FLIP),
+// cards that are new fade in. A card that left is simply gone, and the rest close the gap.
+function rearrange(before) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for (const card of $('grid').children) {
+    const old = before.get(card.dataset.id);
+    const now = card.getBoundingClientRect();
+    if (!old) {
+      card.animate([{ opacity: 0, transform: 'scale(0.95)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+    } else if (old.left !== now.left || old.top !== now.top) {
+      card.animate([{ transform: `translate(${old.left - now.left}px, ${old.top - now.top}px)` }, { transform: 'none' }], {
+        duration: 300,
+        easing: 'ease-in-out',
+      });
+    }
+  }
+}
+
+// A ticked card carries every ticked card with it; any other card goes alone.
+function draggedIds(product) {
+  return selected.has(product.id) ? [...selected] : [product.id];
+}
+
+function selectBox(product) {
+  return el('input', {
+    type: 'checkbox',
+    className: 'card__select',
+    checked: selected.has(product.id),
+    title: 'Select',
+    ariaLabel: `Select ${product.title}`,
+    onchange: (event) => {
+      if (event.target.checked) selected.add(product.id);
+      else selected.delete(product.id);
+      render();
+    },
+  });
+}
+
+// Lists a drop would not change are shown disabled while dragging: the list being viewed,
+// and (from All Items or Unsorted) lists the item is already in, or Unsorted for an item
+// in no list.
+function markDropTargets(ids) {
+  const products = state.products.filter((p) => ids.includes(p.id));
+  const fromList = view.listId && view.listId !== UNSORTED;
+  for (const link of document.querySelectorAll('#lists .list-link')) {
+    const id = link.dataset.listId;
+    // All Items (no id) is never a target. Others are unchanged only when the drop would
+    // change none of the dragged items.
+    const unchanged =
+      !id || id === view.listId || products.every((p) => (id === UNSORTED ? !listsOf(p).length : !fromList && listsOf(p).includes(id)));
+    link.classList.toggle('list-link--disabled', unchanged);
+  }
+}
+
+// The picture that follows the pointer: the card at a quarter of its size, half see-through.
+// Chrome takes a snapshot of the element at drag start, so it only needs to exist briefly
+// (off screen).
+function setDragGhost(event, article) {
+  const SCALE = 0.25;
+  const rect = article.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    top: '-10000px',
+    left: '0',
+    width: `${rect.width * SCALE}px`,
+    height: `${rect.height * SCALE}px`,
+    overflow: 'hidden',
+    pointerEvents: 'none',
+  });
+  const copy = article.cloneNode(true);
+  Object.assign(copy.style, { width: `${rect.width}px`, transform: `scale(${SCALE})`, transformOrigin: '0 0', opacity: '0.5' });
+  ghost.append(copy);
+  document.body.append(ghost);
+  event.dataTransfer.setDragImage(ghost, (event.clientX - rect.left) * SCALE, (event.clientY - rect.top) * SCALE);
+  setTimeout(() => ghost.remove());
 }
 
 // The same shop always gets the same colour.
@@ -322,19 +625,16 @@ function confirmAction(title, text) {
 async function editProduct(product) {
   $('edit-title').value = product.title;
   $('edit-price').value = product.price ?? '';
-  $('edit-currency').value = product.currency ?? '';
+  $('edit-price-unit').textContent = product.currency ?? state.currency;
   $('edit-note').value = product.note;
-  $('edit-list').replaceChildren(
-    new Option(NO_LIST_NAME, DEFAULT_LIST_ID),
-    ...state.lists.map((list) => new Option(list.name, list.id)),
-  );
-  $('edit-list').value = product.listId;
+  fillListChoice($('edit-lists'), state.lists, listsOf(product), NO_LIST_NAME);
+  $('edit-lists').open = false;
   if (!(await ask($('edit-dialog')))) return;
+  const listIds = await chosenLists($('edit-lists'));
   await updateProduct(product.id, {
     title: $('edit-title').value.trim(),
     price: globalThis.SaverExtract.parsePrice($('edit-price').value),
-    currency: $('edit-currency').value.trim().toUpperCase() || null,
-    listId: $('edit-list').value,
+    listIds,
     note: $('edit-note').value.trim(),
   });
 }
@@ -379,10 +679,11 @@ async function checkPrices() {
   button.querySelector('.menu__label').textContent = 'Updating prices';
   let changed = 0;
   let unreadable = 0;
+  const spots = await priceSpots();
   const pending = [...targets];
   const worker = async () => {
     for (let product = pending.shift(); product; product = pending.shift()) {
-      const price = await readCurrentPrice(product);
+      const price = await readCurrentPrice(product, spots);
       if (price == null) {
         unreadable += 1;
         continue;
@@ -400,12 +701,12 @@ async function checkPrices() {
   toast(`${parts.join(' · ')}.`);
 }
 
-async function readCurrentPrice(product) {
+async function readCurrentPrice(product, spots = {}) {
   try {
     const response = await fetch(product.url, { credentials: 'omit' });
     if (!response.ok) return null;
     const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-    const { price, currency } = globalThis.SaverExtract(doc, product.url);
+    const { price, currency } = globalThis.SaverExtract(doc, product.url, { priceSpot: spots[product.store] });
     // Without cookies a shop may answer in another currency; that is not a price change.
     if (currency && product.currency && currency !== product.currency) return null;
     return price;
@@ -482,6 +783,31 @@ async function stopBackup() {
   toast(`Backup stopped. ${BACKUP_FILE} stays in the folder.`);
 }
 
+// Popup preview: the real popup page in a frame, loaded fresh on every open so it shows
+// current styles and data. Its height follows the content.
+
+// A click on the title while the preview is open first closes it (a click outside a popover
+// closes it); without this guard the same click would open it again.
+let previewClosedAt = 0;
+$('popup-preview').addEventListener('toggle', (event) => {
+  if (event.newState === 'closed') previewClosedAt = performance.now();
+});
+
+function togglePopupPreview() {
+  const preview = $('popup-preview');
+  if (performance.now() - previewClosedAt < 300) return;
+  if (preview.matches(':popover-open')) return preview.hidePopover();
+  const frame = $('popup-preview-frame');
+  // Sized by the popup's body: the page's own scroll height never drops below the frame,
+  // so it would only ever grow.
+  frame.onload = () => {
+    const body = frame.contentDocument.body;
+    new ResizeObserver(() => (frame.style.height = `${body.offsetHeight}px`)).observe(body);
+  };
+  frame.src = 'popup.html?preview';
+  preview.showPopover();
+}
+
 // Theme (applied on load by theme.js)
 
 function currentTheme() {
@@ -501,6 +827,97 @@ function showThemeSwitch() {
   const dark = currentTheme() === 'dark';
   $('theme-toggle').dataset.target = dark ? 'light' : 'dark';
   $('theme-toggle').querySelector('.menu__label').textContent = dark ? 'Light mode' : 'Dark mode';
+}
+
+// Add by link (the + in the top bar): in the extension the page is read like the popup
+// does; the web app cannot read other sites, so it saves the link and opens the item to
+// fill in the rest.
+
+async function addByLink() {
+  $('add-url').value = '';
+  const preselected = view.listId && view.listId !== UNSORTED ? [view.listId] : [];
+  fillListChoice($('add-lists'), state.lists, preselected, NO_LIST_NAME);
+  $('add-lists').open = false;
+  if (!(await ask($('add-dialog')))) return;
+  let url;
+  try {
+    url = new URL($('add-url').value.trim()).href;
+  } catch {
+    return toast('That is not a link.');
+  }
+  const listIds = await chosenLists($('add-lists'));
+  const existing = findByUrl(state.products, url);
+  if (existing) {
+    toast('Already saved; here it is.');
+    return editProduct(existing);
+  }
+  const page = (await addPermission) ? await readPage(url) : null;
+  const product = await saveProduct({
+    url: page?.url ?? url,
+    title: page?.title || url,
+    image: page?.images[0] ?? null,
+    price: page?.price ?? null,
+    currency: page?.currency ?? state.currency,
+    listIds,
+  });
+  if (page?.title && page.price != null) toast('Added.');
+  else editProduct(product);
+}
+
+async function readPage(url) {
+  try {
+    const response = await fetch(url, { credentials: 'omit' });
+    if (!response.ok) return null;
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const spots = await priceSpots();
+    return globalThis.SaverExtract(doc, url, { priceSpot: spots[new URL(url).hostname.replace(/^www\./, '')] });
+  } catch {
+    return null;
+  }
+}
+
+// Dropbox sync
+
+async function refreshDropbox() {
+  const status = await dropboxStatus();
+  const on = status.state === 'on';
+  $('dropbox-status').hidden = !on;
+  if (on) {
+    const when = status.lastSync ? new Date(status.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'not yet';
+    $('dropbox-status').textContent = `Syncing with ${status.name}'s Dropbox · last ${when}`;
+  }
+  $('dropbox-connect').hidden = on;
+  $('dropbox-sync').hidden = !on;
+  $('dropbox-disconnect').hidden = !on;
+}
+
+async function runSync(announce) {
+  try {
+    const synced = await syncNow();
+    if (synced && announce) toast('Synced with Dropbox.');
+  } catch (error) {
+    console.error(error);
+    if (announce) toast('Dropbox sync failed. Check the connection and try again.');
+  }
+  await refreshDropbox();
+}
+
+async function connectToDropbox() {
+  if (!dropboxConfigured) return toast('Dropbox is not set up yet: add the app key to config.js (see DROPBOX.md).');
+  try {
+    await connectDropbox(); // The web app leaves the page here and comes back connected.
+    toast('Connected to Dropbox.');
+    await runSync(true);
+  } catch (error) {
+    console.error(error);
+    toast('Dropbox sign-in did not finish.');
+  }
+}
+
+async function disconnectFromDropbox() {
+  await disconnectDropbox();
+  await refreshDropbox();
+  toast('Dropbox sync stopped. shopmarks.json stays in your Dropbox.');
 }
 
 function toast(text) {

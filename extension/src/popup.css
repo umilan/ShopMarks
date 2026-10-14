@@ -1,14 +1,15 @@
+/* Same look as the dashboard: a raised top bar over a tinted content area. */
 body {
   width: 360px;
+  background: linear-gradient(var(--color-field) 0 0) var(--color-surface);
 }
 
 .popup-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px 8px 16px;
-  border-bottom: var(--border);
-  background: var(--color-surface);
+  padding: 8px 16px;
+  background: linear-gradient(var(--color-raised) 0 0) var(--color-surface);
 }
 
 .popup-header__name {
@@ -16,14 +17,45 @@ body {
   font-size: 16px;
 }
 
-.count {
-  min-width: 24px;
-  padding: 2px 8px;
-  border-radius: var(--radius);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  font-size: 12px;
-  text-align: center;
+/* Save sits in the header, at the dashboard's 40px control height. */
+.popup-header .button {
+  height: 32px;
+}
+
+/* After saving: a lighter bar fills the button over 3s, then the popup closes
+   (popup.js, SAVED_DELAY). */
+.button--saved {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.button--saved::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--wht50p);
+  opacity: 0.4;
+  transform-origin: left;
+  animation: saved-progress 3s linear forwards;
+}
+
+@keyframes saved-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button--saved::before {
+    animation: none;
+  }
 }
 
 .message {
@@ -34,21 +66,38 @@ body {
 .save-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   padding: 16px;
 }
 
 .hint {
-  padding: 8px 16px;
-  border-radius: var(--radius);
-  background: var(--color-accent-soft);
+  padding: 0px;
+  color: var(--color-price-up);
   font-size: 12px;
+}
+
+#note {
+  height: 80px;
+}
+
+/* Title as tall as the image (96px): then the price field (40px) sits level with the
+   pager (40px) under the image, as both columns use the form's 16px gap. */
+#title {
+  height: 96px;
+}
+
+/* Separates where the item goes (lists, note) from what was read off the page. */
+.divider {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: var(--border);
 }
 
 .preview {
   display: grid;
   grid-template-columns: 96px 1fr;
-  gap: 16px;
+  gap: 8px;
 }
 
 .preview__media {
@@ -74,6 +123,23 @@ body {
   object-fit: contain;
 }
 
+/* Single-line fields match the dashboard's 40px controls. */
+.save-form input.input,
+.save-form select.input {
+  height: 40px;
+}
+
+/* Fields go without visible labels: the placeholder (or the value) says what each one is.
+   The labels stay for screen readers. */
+.save-form .field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .preview__fields {
   display: flex;
   flex-direction: column;
@@ -81,20 +147,47 @@ body {
   min-width: 0;
 }
 
+/* Price field with the target button after it. */
+.price-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.price-row .field {
+  flex: 1;
+}
+
+/* Filled like the fields next to it; hover goes one step up, as on fields. */
+.icon-button {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--color-field);
+}
+
+.icon-button:hover {
+  background: var(--color-surface-active);
+}
+
+/* As tall as the price field, so the arrows line up with it. */
 .pager {
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
 }
 
+/* Plain icon buttons, like the dashboard's. */
 .pager__button {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
   font: inherit;
   font-size: 16px;
@@ -110,28 +203,14 @@ body {
   background: var(--color-surface-active);
 }
 
-.store {
-  margin-top: -8px;
-  font-size: 12px;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-}
-
-.actions .button--primary {
-  flex: 1;
-  min-height: 40px;
-}
-
-.actions .button--danger {
-  min-height: 40px;
-}
-
 .status {
   min-height: 16px;
   color: var(--color-accent);
   font-size: 12px;
   font-weight: 600;
+}
+
+/* An empty status line takes no room, so the form ends right after the last field. */
+.status:empty {
+  display: none;
 }

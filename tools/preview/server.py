@@ -3,7 +3,7 @@
 
     python3 tools/preview/server.py [port]
 
-The extension files are served untouched; the dashboard page gets shim.js added
+The extension files are served untouched; the dashboard and popup pages get shim.js added
 in front of its scripts, which fakes chrome.storage and reloads on file changes.
 """
 
@@ -15,6 +15,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 EXTENSION = HERE.parent.parent / "extension"
 DASHBOARD = "/src/dashboard.html"
+# Pages that get the shim; the popup is shown inside the dashboard as a preview.
+PAGES = {DASHBOARD, "/src/popup.html"}
 SHIM_TAG = '<script src="/__preview/shim.js"></script>\n  '
 
 
@@ -33,8 +35,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.reply(version().encode(), "text/plain")
         elif path == "/__preview/shim.js":
             self.reply((HERE / "shim.js").read_bytes(), "text/javascript")
-        elif path == DASHBOARD:
-            html = (EXTENSION / "src/dashboard.html").read_text(encoding="utf-8")
+        elif path in PAGES:
+            html = (EXTENSION / path.lstrip("/")).read_text(encoding="utf-8")
             self.reply(html.replace("<script", SHIM_TAG + "<script", 1).encode(), "text/html; charset=utf-8")
         else:
             super().do_GET()

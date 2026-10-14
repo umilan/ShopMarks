@@ -145,7 +145,32 @@
     return /^[a-z]{3}$/i.test(value.trim()) ? value.trim().toUpperCase() : detectCurrency(value);
   }
 
-  function extract(doc, pageUrl) {
+  // The price at a spot the user pointed out on this shop (see picker.js): the label next
+  // to it ("Cena:"), which survives rows moving around, else a CSS selector. Older spots
+  // are a bare selector string.
+  function spotPrice(doc, spot) {
+    if (!spot) return null;
+    const { selector, label } = typeof spot === 'string' ? { selector: spot } : spot;
+    const texts = [];
+    if (label) {
+      const labelled = [...doc.querySelectorAll('body *')].find((el) => clean(el.textContent) === label && el.nextElementSibling);
+      texts.push(labelled?.nextElementSibling.textContent);
+    }
+    try {
+      if (selector) texts.push(doc.querySelector(selector)?.textContent);
+    } catch {
+      // Not a valid selector any more.
+    }
+    for (const text of texts) {
+      const price = parsePrice(text);
+      if (price != null) return { price, currency: detectCurrency(text) };
+    }
+    return null;
+  }
+
+  // options.priceSpot: where this shop shows its price, picked by the user; it wins over
+  // everything read automatically, as the user said that is the right number.
+  function extract(doc, pageUrl, options = {}) {
     const absolute = (value) => {
       if (typeof value !== 'string' || !value) return null;
       try {
@@ -161,6 +186,7 @@
     const metaPrice = parsePrice(meta(doc, 'product:sale_price:amount', 'product:price:amount', 'og:price:amount'), true);
     const microPrice = parsePrice(micro?.price, true);
 
+    const spot = spotPrice(doc, options.priceSpot);
     let found = readOffer(ld?.offers);
     if (!found && metaPrice != null) {
       found = { price: metaPrice, currency: meta(doc, 'product:sale_price:currency', 'product:price:currency', 'og:price:currency') };
@@ -171,6 +197,11 @@
 
     let currency = normalizeCurrency(found?.currency);
     if (found && !currency && structured) currency = visiblePrice(doc)?.currency ?? null;
+    if (spot) {
+      // The spot's own text may not name a currency; then what the page says otherwise stands.
+      currency = spot.currency ?? currency;
+      found = spot;
+    }
 
     const siteName = meta(doc, 'og:site_name');
     const title =
@@ -201,9 +232,10 @@
       price: found?.price ?? null,
       currency,
       siteName,
-      isProduct: Boolean(ld || micro || metaPrice != null || /product/i.test(meta(doc, 'og:type') ?? '')),
+      // A price found where the user pointed it out on this shop also marks a product page.
+      isProduct: Boolean(ld || micro || metaPrice != null || spot || /product/i.test(meta(doc, 'og:type') ?? '')),
     };
   }
 
-  globalThis.SaverExtract = Object.assign(extract, { parsePrice });
+  globalThis.SaverExtract = Object.assign(extract, { parsePrice, detectCurrency });
 })();

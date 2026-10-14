@@ -1,0 +1,13 @@
+{
+  "name": "ShopMarks",
+  "short_name": "ShopMarks",
+  "description": "Products saved from any online shop, in one place.",
+  "start_url": "dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#196432",
+  "icons": [
+    { "src": "../icons/icon128.png", "sizes": "128x128", "type": "image/png" }
+  ]
+}

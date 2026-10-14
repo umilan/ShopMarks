@@ -5,15 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ShopMarks</title>
   <link rel="icon" href="../icons/icon32.png">
+  <!-- As a web app (PWA) on a phone: added to the Home Screen it opens full screen. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../icons/icon128.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ShopMarks">
+  <script src="web.js"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <img src="../icons/icon48.png" width="24" height="24" alt="">
-      <h1 class="brand__name">ShopMarks</h1>
+    <div id="brand" class="brand" role="button" tabindex="0" title="Preview the popup" aria-haspopup="dialog" aria-controls="popup-preview">
+      <svg class="logo" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect class="logo__tile" width="24" height="24" rx="5"/><path class="logo__mark" d="M8.5 6.5h7v11l-3.5-3-3.5 3z"/></svg>
+      <h1 class="brand__name"><span class="name-accent">Shop</span>Marks</h1>
     </div>
     <div id="search-field" class="input-icon topbar__search">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -22,6 +28,9 @@
     <button id="search-toggle" class="button topbar__icon-button topbar__search-toggle" type="button" title="Search" aria-label="Search" aria-expanded="false" aria-controls="search">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="topbar__search-open"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="topbar__search-close"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <button id="add-item" class="button topbar__icon-button" type="button" title="Add by link" aria-label="Add by link">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
     </button>
     <div class="topbar__actions menu">
       <button id="menu-toggle" class="button topbar__icon-button menu__toggle" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">
@@ -32,11 +41,18 @@
         <button id="export" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span class="menu__label">Export</span></button>
         <button id="import" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span class="menu__label">Import</span></button>
         <button id="theme-toggle" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="theme-icon-dark"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g><g class="theme-icon-light"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></svg><span class="menu__label">Dark mode</span></button>
+        <label class="menu__row"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg><span class="menu__label">Currency</span><select id="currency" class="input menu__select" aria-label="Currency prices are shown in"></select></label>
         <div id="backup-menu" class="menu__group" hidden>
           <p id="backup-status" class="menu__note muted" hidden></p>
           <button id="backup-resume" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l14 9-14 9z"/></svg><span class="menu__label">Resume backup</span></button>
           <button id="backup-choose" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="menu__label">Backup folder</span></button>
           <button id="backup-stop" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg><span class="menu__label">Stop backup</span></button>
+        </div>
+        <div id="dropbox-menu" class="menu__group">
+          <p id="dropbox-status" class="menu__note muted" hidden></p>
+          <button id="dropbox-connect" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span class="menu__label">Sync with Dropbox</span></button>
+          <button id="dropbox-sync" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="menu__label">Sync now</span></button>
+          <button id="dropbox-disconnect" class="menu__item" type="button" role="menuitem" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><span class="menu__label">Stop Dropbox sync</span></button>
         </div>
       </div>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
@@ -69,9 +85,15 @@
               <option value="store">Shop A–Z</option>
             </select>
           </div>
+          <button id="view-toggle" class="button button--ghost view-toggle" type="button" title="List view" aria-label="List view" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-toggle__list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-toggle__grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          </button>
+          <button id="select-toggle" class="button button--ghost" type="button" hidden>Select all</button>
+          <button id="delete-selected" class="button button--ghost button--danger" type="button" hidden>Delete selected</button>
           <div id="list-menu" class="menu">
             <button id="list-menu-toggle" class="button button--ghost menu__toggle list-menu__toggle" type="button" title="List actions" aria-label="List actions" aria-haspopup="menu" aria-expanded="false" aria-controls="list-menu-sheet">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
             </button>
             <div id="list-menu-sheet" class="menu__sheet" role="menu" hidden>
               <button id="rename-list" class="menu__item" type="button" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></svg><span class="menu__label">Rename</span></button>
@@ -93,20 +115,23 @@
         <span class="field__label">Title</span>
         <textarea id="edit-title" class="input" rows="3" required></textarea>
       </label>
-      <div class="field-row">
-        <label class="field">
-          <span class="field__label">Price</span>
-          <input id="edit-price" class="input" inputmode="decimal" autocomplete="off">
-        </label>
-        <label class="field">
-          <span class="field__label">Currency</span>
-          <input id="edit-currency" class="input input--currency" maxlength="3" autocomplete="off">
-        </label>
-      </div>
       <label class="field">
-        <span class="field__label">List</span>
-        <select id="edit-list" class="input"></select>
+        <span class="field__label">Price</span>
+        <span class="price-field">
+          <input id="edit-price" class="input" inputmode="decimal" autocomplete="off">
+          <span id="edit-price-unit" class="price-field__unit" aria-hidden="true"></span>
+        </span>
       </label>
+      <div class="field">
+        <span class="field__label">Lists</span>
+        <details id="edit-lists" class="list-choice">
+          <summary class="input list-choice__summary"></summary>
+          <div class="list-choice__panel">
+            <div class="list-choice__options"></div>
+            <input class="input list-choice__new" maxlength="60" autocomplete="off" placeholder="New list name" aria-label="New list name">
+          </div>
+        </details>
+      </div>
       <label class="field">
         <span class="field__label">Note</span>
         <textarea id="edit-note" class="input" rows="3"></textarea>
@@ -143,6 +168,32 @@
     </form>
   </dialog>
 
+  <div id="popup-preview" class="popup-preview" popover aria-label="Popup preview">
+    <iframe id="popup-preview-frame" class="popup-preview__frame" title="Popup preview"></iframe>
+  </div>
+  <dialog id="add-dialog" class="dialog" closedby="any">
+    <form method="dialog" class="dialog__form">
+      <h2 class="dialog__title">Add item</h2>
+      <label class="field">
+        <span class="field__label">Link</span>
+        <input id="add-url" class="input" type="url" inputmode="url" autocomplete="off" placeholder="Paste a product link" required>
+      </label>
+      <div class="field">
+        <span class="field__label">Lists</span>
+          <details id="add-lists" class="list-choice">
+            <summary class="input list-choice__summary"></summary>
+            <div class="list-choice__panel">
+              <div class="list-choice__options"></div>
+              <input class="input list-choice__new" maxlength="60" autocomplete="off" placeholder="New list name" aria-label="New list name">
+            </div>
+          </details>
+      </div>
+      <div class="dialog__actions">
+        <button class="button" type="button" value="cancel">Cancel</button>
+        <button class="button button--primary" value="ok">Add</button>
+      </div>
+    </form>
+  </dialog>
   <p id="toast" class="toast" role="status" hidden></p>
 
   <script src="extractor.js"></script>

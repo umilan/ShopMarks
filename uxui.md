@@ -39,9 +39,10 @@ Every color comes from this palette, defined at the top of [ui.css](extension/sr
 | `--acc50p` | `rgba(25,100,50,0.5)` |
 | `--acc100p` | `rgb(25,100,50)` |
 
-- Components use only the semantic names (`--color-text`, `--color-field`, `--color-price-down`, …), never a palette step or a raw color. ui.css defines each one as `light-dark(light value, dark value)`, so a palette step used directly would not switch with the theme.
-- Light mode uses the black steps where dark mode uses the white ones (e.g. `--blk5p` hover becomes `--wht5p`).
-- The one deliberate exception is the note stripe drawn over product images, which looks the same in both themes.
+- Components use only the semantic names (`--color-text`, `--color-surface`, `--color-price-down`, …), never a palette step or a raw color. ui.css defines each one as `light-dark(light value, dark value)`, so a palette step used directly would not switch with the theme.
+- Dark mode is light mode with `blk` and `wht` swapped: every semantic color that uses `--blk*p` in light mode uses the matching `--wht*p` in dark mode, and the other way round (e.g. the field fill `--blk5p` becomes `--wht5p`, the white surface becomes black).
+- Exceptions: the accent is lightened in dark mode so it stays readable on black; the dialog backdrop and shadows stay black; text on the colored placeholder tile stays white.
+- Deliberate exceptions that look the same in both themes: the note stripe drawn over product images, and the logo (`--acc100p` tile, `--wht100p` bookmark).
 - Where a color must be opaque (sticky rows that content scrolls under), mix palette values with `color-mix()` instead of using a translucent step.
 - The only exceptions are the danger reds, since the palette has no red, and the per-item placeholder hue.
 
@@ -55,6 +56,6 @@ Every control reacts the same way. Inputs and buttons have no visible border, in
 | White (regular buttons, list rows, menu items) | `--blk5p` | `--blk10p` |
 | `--color-field` (fields, top-bar icon buttons) | `--blk10p` | `--blk10p` |
 
-- In dark mode the same steps use the white palette (`--wht5p`, `--wht10p`) through the semantic `--color-surface-hover` / `--color-surface-active` tokens.
+- Dark mode uses white and starts one step higher, since 5% barely shows on black: element fills rest at `--wht10p`, and hover / press go to 20% white (mixed from `--wht100p`, as the palette has no step between 10 and 50).
 - Keep the 1px transparent border so controls stay the same size as bordered elements. The selected state (current list) uses the accent tint, not a gray step.
 - Exceptions with their own colors: primary buttons (accent shades), danger buttons (red), price changes (`--color-price-*-hover`), and cards, which lift with a shadow instead of changing fill.

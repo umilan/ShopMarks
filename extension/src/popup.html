@@ -9,17 +9,32 @@
 </head>
 <body>
   <header class="popup-header">
-    <img src="../icons/icon48.png" width="24" height="24" alt="">
-    <h1 class="popup-header__name">ShopMarks</h1>
-    <button id="open-dashboard" class="button button--ghost" type="button">
-      Saved items <span id="count" class="count">0</span>
-    </button>
+    <svg class="logo" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect class="logo__tile" width="24" height="24" rx="5"/><path class="logo__mark" d="M8.5 6.5h7v11l-3.5-3-3.5 3z"/></svg>
+    <h1 class="popup-header__name"><span class="name-accent">Shop</span>Marks</h1>
+    <button id="save" class="button button--primary" type="submit" form="save-form" hidden>Save</button>
   </header>
 
   <p id="message" class="message muted">Reading this page</p>
 
   <form id="save-form" class="save-form" hidden>
     <p id="hint" class="hint" hidden>This doesn't look like a product page. You can still save it.</p>
+
+    <div class="field">
+      <span class="field__label">Lists</span>
+      <details id="lists" class="list-choice">
+        <summary class="input list-choice__summary"></summary>
+        <div class="list-choice__panel">
+          <div class="list-choice__options"></div>
+          <input class="input list-choice__new" maxlength="60" autocomplete="off" placeholder="New list name" aria-label="New list name">
+        </div>
+      </details>
+    </div>
+    <label class="field">
+      <span class="field__label">Note</span>
+      <textarea id="note" class="input" rows="2" placeholder="Add custom note (optional)"></textarea>
+    </label>
+
+    <hr class="divider">
 
     <div class="preview">
       <div class="preview__media">
@@ -35,40 +50,21 @@
       <div class="preview__fields">
         <label class="field">
           <span class="field__label">Title</span>
-          <textarea id="title" class="input" rows="3" required></textarea>
+          <textarea id="title" class="input" rows="3" placeholder="Title" required></textarea>
         </label>
-        <div class="field-row">
+        <div class="price-row">
           <label class="field">
-            <span class="field__label">Price</span>
-            <input id="price" class="input" inputmode="decimal" autocomplete="off">
+            <span id="price-label" class="field__label">Price</span>
+            <span class="price-field">
+              <input id="price" class="input" inputmode="decimal" autocomplete="off" placeholder="Price">
+              <span id="price-unit" class="price-field__unit" aria-hidden="true"></span>
+            </span>
           </label>
-          <label class="field">
-            <span class="field__label">Currency</span>
-            <input id="currency" class="input input--currency" maxlength="3" autocomplete="off">
-          </label>
+          <button id="price-target" class="button button--ghost icon-button" type="button" title="Show where the price is on the page" aria-label="Show where the price is on the page"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h3"/><path d="M19 12h3"/><path d="M12 2v3"/><path d="M12 19v3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
     </div>
 
-    <p class="store muted">From <span id="store"></span></p>
-
-    <label class="field">
-      <span class="field__label">List</span>
-      <select id="list" class="input"></select>
-    </label>
-    <label id="new-list-field" class="field" hidden>
-      <span class="field__label">New list name</span>
-      <input id="new-list-name" class="input" maxlength="60" autocomplete="off">
-    </label>
-    <label class="field">
-      <span class="field__label">Note</span>
-      <textarea id="note" class="input" rows="2" placeholder="Size, colour, who it's for"></textarea>
-    </label>
-
-    <div class="actions">
-      <button id="save" class="button button--primary" type="submit">Save</button>
-      <button id="remove" class="button button--danger" type="button" hidden>Remove</button>
-    </div>
     <p id="status" class="status" role="status"></p>
   </form>
 

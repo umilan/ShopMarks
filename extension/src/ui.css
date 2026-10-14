@@ -5,38 +5,55 @@
 
   --wht5p: rgba(255,255,255,0.05);
   --wht10p: rgba(255,255,255,0.1);
+  --wht25p: rgba(255,255,255,0.25);
   --wht50p: rgba(255,255,255,0.5);
   --wht100p: rgba(255,255,255,1);
   --blk5p: rgba(0,0,0,0.05);
   --blk10p: rgba(0,0,0,0.1);
+  --blk25p: rgba(0,0,0,0.25);
   --blk50p: rgba(0,0,0,0.5);
   --blk100p: rgba(0,0,0,1);
-  --acc10p: rgba(25,100,50,0.1);
-  --acc50p: rgba(25,100,50,0.5);
-  --acc100p: rgb(25,100,50);
+  --acc10p: rgba(43, 117, 68, 0.1);
+  --acc25p: rgba(43, 117, 68, 0.25);
+  --acc50p: rgba(43, 117, 68, 0.5);
+  --acc100p: rgb(43, 117, 68);
 
   /* Semantic colors, built only from the palette above: light-dark(light value, dark value).
-     The theme is color-scheme, set below from the system or the switch in the settings menu.
-     Opaque mixes are for surfaces that cards scroll under (sticky rows), where alpha would show through. */
-  --color-bg: light-dark(color-mix(in srgb, var(--blk100p) 5%, var(--wht100p)), color-mix(in srgb, var(--wht100p) 5%, var(--blk100p)));
-  --color-surface: light-dark(var(--wht100p), color-mix(in srgb, var(--wht100p) 10%, var(--blk100p)));
-  --color-surface-hover: light-dark(var(--blk5p), var(--wht5p));
+     Dark mode is light mode with blk and wht swapped; the exceptions are marked.
+     The theme is color-scheme, set below from the system or the switch in the settings menu. */
+  --color-surface: light-dark(var(--wht100p), var(--blk100p));
+  /* Exception: raised areas (top bar, cards, menus, dialogs) sit lighter than the page in
+     dark mode instead of pure black. They must be opaque: menus and dialogs float over
+     content and the top bar covers what scrolls under it. So instead of --wht10p (which
+     on the 10% white page reads as about 20%) it is a solid 20% white on black. */
+  --color-raised: light-dark(var(--wht100p), var(--wht10p));
+  /* Element fills: light mode steps 5% → 10% black. Dark mode needs more to show on
+     black, so it starts at 10% white and its next step is 20% (no palette step between
+     10 and 50, so it is mixed from --wht100p). */
+  --color-surface-hover: light-dark(var(--blk5p), var(--wht10p));
   --color-surface-active: light-dark(var(--blk10p), var(--wht10p));
-  /* Resting fill of fields and filled icon buttons; the same step as hover. */
+  /* Resting fill of fields and filled icon buttons; hover goes one step up. */
   --color-field: light-dark(var(--blk5p), var(--wht5p));
   --color-text: light-dark(var(--blk100p), var(--wht100p));
   --color-text-muted: light-dark(var(--blk50p), var(--wht50p));
-  /* The plain accent is too dark to read on black, so dark mode lightens it. */
+  /* Exception: the plain accent is too dark to read on black, so dark mode lightens it. */
   --color-accent: light-dark(var(--acc100p), color-mix(in srgb, var(--acc100p), var(--wht100p) 50%));
   --color-accent-hover: light-dark(color-mix(in srgb, var(--acc100p), var(--blk100p) 10%), color-mix(in srgb, var(--acc100p), var(--wht100p) 60%));
   --color-accent-active: light-dark(color-mix(in srgb, var(--acc100p), var(--blk100p) 50%), color-mix(in srgb, var(--acc100p), var(--wht100p) 70%));
-  --color-accent-soft: light-dark(var(--acc10p), var(--acc50p));
-  --color-on-accent: light-dark(var(--wht100p), var(--blk100p));
+  --color-accent-soft: light-dark(var(--acc10p), var(--acc25p));
+  /* Exception: primary buttons use the full accent with white text in both themes;
+     hover and press darken it. */
+  --color-primary: var(--acc100p);
+  --color-primary-hover: color-mix(in srgb, var(--acc100p), var(--blk100p) 10%);
+  --color-primary-active: color-mix(in srgb, var(--acc100p), var(--blk100p) 50%);
+  --color-on-primary: var(--wht100p);
   /* The palette has no red, so danger keeps its own colors. */
   --color-danger: light-dark(#b3261e, #f2867d);
   --color-danger-soft: light-dark(#fbe9e7, #3d1f1c);
   --color-danger-soft-active: light-dark(#f6d5d1, #4f2824);
   --color-image-bg: light-dark(var(--blk10p), var(--wht10p));
+  /* Exceptions: text on the colored placeholder tile stays white; the dialog backdrop
+     and shadows stay black (a white shadow would glow). */
   --color-on-placeholder: var(--wht100p);
   --color-overlay: var(--blk50p);
   --color-shadow: light-dark(var(--blk10p), var(--blk50p));
@@ -48,8 +65,8 @@
   --color-price-up-hover: light-dark(color-mix(in srgb, var(--color-danger), var(--blk100p) 10%), color-mix(in srgb, var(--color-danger), var(--wht100p) 10%));
 
   /* SVG data URIs can't read variables, and light-dark() takes only colors, so the
-     chevron is swapped with the theme below; its stroke matches --blk50p / --wht50p. */
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+     chevron is swapped with the theme below; its stroke matches the text, --blk100p / --wht100p. */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,1)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   --border-color: light-dark(var(--blk10p), var(--wht10p));
   --border: 1px solid var(--border-color);
@@ -72,12 +89,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,1)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 }
 
 :root[data-theme="dark"] {
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,1)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 *,
@@ -92,7 +109,9 @@
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  /* The one page color; elements on the page have no background of their own,
+     except sticky rows (which repeat it to cover what scrolls beneath). */
+  background: var(--color-surface);
   color: var(--color-text);
   font: 14px/1.4 var(--font);
 }
@@ -164,19 +183,19 @@ a:active {
 }
 
 .button--primary {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .button--primary:hover {
-  border-color: var(--color-accent-hover);
-  background: var(--color-accent-hover);
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
 }
 
 .button--primary:active {
-  border-color: var(--color-accent-active);
-  background: var(--color-accent-active);
+  border-color: var(--color-primary-active);
+  background: var(--color-primary-active);
 }
 
 .button--ghost {
@@ -250,6 +269,25 @@ textarea.input {
   resize: vertical;
 }
 
+/* "Shop" in the app name, in the accent. */
+.name-accent {
+  color: var(--color-accent);
+}
+
+/* App logo: a white bookmark on the accent tile. Uses the palette directly so it looks
+   the same in both themes (the semantic accent is lightened in dark mode). */
+.logo {
+  flex: none;
+}
+
+.logo__tile {
+  fill: var(--acc100p);
+}
+
+.logo__mark {
+  fill: var(--wht100p);
+}
+
 /* An input with a leading icon; the wrapper takes the input's place in the layout. */
 .input-icon {
   position: relative;
@@ -261,7 +299,7 @@ textarea.input {
   top: 50%;
   left: 16px;
   translate: 0 -50%;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   pointer-events: none;
 }
 
@@ -269,12 +307,85 @@ textarea.input {
   padding-left: 40px;
 }
 
-.input--currency {
-  text-transform: uppercase;
+
+/* Multi-choice list picker (listchoice.js): a field like a select that opens in place
+   into checkboxes, with a box to name a new list. */
+.list-choice__summary {
+  display: block;
+  min-height: 40px;
+  line-height: 22px;
+  padding-right: 40px;
+  overflow: hidden;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  list-style: none;
+  cursor: pointer;
 }
 
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 80px;
+.list-choice__summary::-webkit-details-marker {
+  display: none;
+}
+
+.list-choice[open] .list-choice__summary {
+  background-color: var(--color-surface-active);
+}
+
+.list-choice__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.list-choice__options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-field);
+}
+
+.list-choice__option {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.list-choice__option:hover {
+  background: var(--color-surface-hover);
+}
+
+.list-choice__option input {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.list-choice__new {
+  margin-top: 8px;
+}
+
+/* The currency sits inside a price field, at its end (popup, edit dialog). */
+.price-field {
+  position: relative;
+  display: block;
+}
+
+.price-field .input {
+  padding-right: 56px;
+}
+
+.price-field__unit {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  translate: 0 -50%;
+  color: var(--color-text-muted);
+  pointer-events: none;
 }

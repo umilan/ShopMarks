@@ -1,3 +1,7 @@
+body {
+      background: var(--color-field);
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -7,13 +11,37 @@
   gap: 16px;
   padding: 16px;
   border-bottom: 0px var(--border);
-  background: var(--color-surface);
+  /* --color-raised is see-through in dark mode; laid on the page color it stays opaque,
+     so nothing that scrolls under or sits behind shows through. */
+  background: linear-gradient(var(--color-raised) 0 0) var(--color-surface);
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+}
+
+/* The popup as it looks in the toolbar, dropped down under the app title. */
+.popup-preview {
+  inset: auto;
+  top: calc(var(--topbar-height, 64px) + 8px);
+  left: 16px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow);
+}
+
+.popup-preview__frame {
+  display: block;
+  width: 360px;
+  height: 480px;
+  max-height: calc(100dvh - var(--topbar-height, 64px) - 32px);
+  border: 0;
 }
 
 .brand__name {
@@ -154,6 +182,24 @@
   display: none;
 }
 
+/* A setting inside a menu: icon and label like an item, with its control at the end. */
+.menu__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 8px 0 16px;
+  white-space: nowrap;
+}
+
+.menu__select {
+  width: auto;
+  height: 32px;
+  margin-left: auto;
+  padding-block: 0;
+  field-sizing: content;
+}
+
 .menu__item--danger {
   color: var(--color-danger);
 }
@@ -235,6 +281,95 @@
   font-weight: 600;
 }
 
+/* Dragging a card: the lists it can go to are outlined, the one under the pointer filled. */
+.dragging-card .list-link:not(:first-child) {
+  outline: 1px dashed var(--border-color);
+  outline-offset: -1px;
+}
+
+/* While dragging, an arrow nudging left / right before each list the card can go to;
+   only those lists move their name right to make room. */
+.dragging-card .list-link[data-list-id]:not(.list-link--disabled) {
+  position: relative;
+  padding-left: 40px;
+  background: var(--color-surface-hover);
+}
+
+.dragging-card .list-link[data-list-id]:not(.list-link--disabled)::before {
+  content: "→";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  animation: drop-arrow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes drop-arrow {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dragging-card .list-link[data-list-id]::before {
+    animation: none;
+  }
+}
+
+/* A list the card cannot go to (it is already there): dimmed, no drop. Replaces the green
+   current-list look while dragging. */
+.dragging-card .list-link.list-link--disabled {
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 400;
+  opacity: 0.4;
+}
+
+/* The list under a dragged card: full accent, like the primary button. Its count and
+   arrow turn white with the name. */
+.dragging-card .list-link[data-list-id].list-link--drop:not(.list-link--disabled) {
+  outline: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.dragging-card .list-link[data-list-id].list-link--drop:not(.list-link--disabled) .list-link__count,
+.dragging-card .list-link[data-list-id].list-link--drop:not(.list-link--disabled)::before {
+  color: var(--color-on-primary);
+}
+
+/* Trash: shown at the end of the lists only while a card is dragged. Under the pointer it
+   turns red instead of accent, as dropping there deletes. */
+.list-link--trash {
+  display: none;
+}
+
+.dragging-card .list-link--trash {
+  display: flex;
+  color: var(--color-danger);
+}
+
+.dragging-card .list-link[data-list-id].list-link--trash.list-link--drop:not(.list-link--disabled) {
+  background: var(--color-danger);
+}
+
+.dragging-card .list-link[data-list-id].list-link--trash:not(.list-link--disabled)::before {
+  color: var(--color-danger);
+}
+
+.dragging-card .list-link[data-list-id].list-link--trash.list-link--drop:not(.list-link--disabled)::before {
+  color: var(--color-on-primary);
+}
+
 .list-link__name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -268,7 +403,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 0 16px 0;
-  background: var(--color-bg);
+  /* Covers the cards scrolling beneath. The layout's fill is see-through, so it is laid
+     on the page color to match it exactly while staying opaque. */
+  background: linear-gradient(var(--color-field) 0 0) var(--color-surface);
 }
 
 .main-head__title, .sidebar__title {
@@ -290,6 +427,21 @@
 
 /* In the list heading row sort is plain and only as wide as the chosen option;
    the field shows on hover. (On mobile it sits in the top bar and keeps its fill.) */
+/* While cards are ticked the row offers Select all / none instead of sorting. */
+.main-head--selecting .main-head__sort {
+  display: none;
+}
+
+/* As tall as the sort field they replace, so the row keeps its height. */
+#select-toggle,
+#delete-selected {
+  height: 40px;
+}
+
+#select-toggle {
+  color: var(--color-accent);
+}
+
 .main-head .main-head__sort .input {
   field-sizing: content;
   background-color: transparent;
@@ -313,7 +465,133 @@
   overflow: hidden;
   border: var(--border);
   border-radius: var(--radius-large);
-  background: var(--color-surface);
+  background: var(--color-raised);
+}
+
+/* List view: 64px rows (border included), a square picture filling the row's height,
+   the details beside it and a ⋮ menu at the end in place of the hover buttons. */
+/* minmax(0, …): a plain 1fr column grows to fit a long one-line title, making the page
+   wider than the window; this keeps rows at the window width so titles end in "…". */
+.grid--list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.grid--list .card {
+  flex-direction: row;
+  align-items: center;
+  height: 64px;
+  border-radius: var(--radius);
+  /* Visible, so the row's ⋯ menu can open past its edge. */
+  overflow: visible;
+  padding-right: 8px;
+}
+
+.grid--list .card__media {
+  flex: none;
+  align-self: stretch;
+  width: 62px;
+  overflow: hidden;
+  border-right: var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.grid--list .card__image {
+  height: 100%;
+}
+
+.grid--list .card__image--empty {
+  padding: 4px;
+  font-size: 12px;
+}
+
+.grid--list .card__body {
+  min-width: 0;
+  padding: 8px 16px;
+}
+
+.grid--list .card__note,
+.grid--list .card__actions {
+  display: none;
+}
+
+/* The row is a grid: picture | title over shop | price | ⋮. The body and meta wrappers
+   step aside (display: contents) so their parts take these columns directly. */
+.grid--list .card {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto auto;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "media title price menu"
+    "media store price menu";
+  column-gap: 16px;
+  row-gap: 2px;
+}
+
+.grid--list .card__media {
+  grid-area: media;
+}
+
+.grid--list .card__body,
+.grid--list .card__meta {
+  display: contents;
+}
+
+.grid--list .card__title {
+  grid-area: title;
+  align-self: end;
+}
+
+.grid--list .card__store {
+  grid-area: store;
+  align-self: start;
+  margin-right: 0;
+}
+
+/* Stacked and right-aligned: the change on top, the price below. */
+.grid--list .card__pricing {
+  grid-area: price;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.grid--list .card__menu {
+  grid-area: menu;
+}
+
+.card__menu {
+  display: none;
+}
+
+/* Last in the row: the menu comes before the details in the markup. */
+.grid--list .card__menu {
+  display: block;
+  flex: none;
+  order: 1;
+}
+
+.card__menu-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+/* The view switch shows the icon of the view it switches to. */
+.view-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.view-toggle[aria-pressed="false"] .view-toggle__grid,
+.view-toggle[aria-pressed="true"] .view-toggle__list {
+  display: none;
+}
+
+.card--dragging {
+  opacity: 0.2;
 }
 
 .card:hover {
@@ -322,7 +600,37 @@
 
 .card__media {
   position: relative;
+  /* Its layers (shade, note, controls) stack only within the picture, so none of them
+     rises over the sticky heading row while scrolling. */
+  isolation: isolate;
   border-bottom: var(--border);
+}
+
+/* A dark shade from the top of the picture while the corner controls show (hover, or
+   while selecting), so they stand out on light pictures. Under them, over the picture. */
+.card__media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(var(--blk50p), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.card:hover .card__media::before,
+.grid--selecting .card__media::before {
+  opacity: 1;
+}
+
+/* With a note, the shade also rises from the bottom, behind the note. */
+.card__media:has(.card__note)::before {
+  background: linear-gradient(var(--blk50p), transparent 40%, transparent 50%, var(--blk50p));
+}
+
+.grid--list .card__media::before {
+  background: var(--blk50p);
 }
 
 .card__image {
@@ -378,9 +686,11 @@
   gap: 8px;
 }
 
+/* Shop on the left, price on the right. */
 .card__store {
+  order: -1;
   min-width: 0;
-  margin-left: auto;
+  margin-right: auto;
   overflow: hidden;
   color: var(--color-text-muted);
   font-size: 12px;
@@ -409,8 +719,9 @@
   color: var(--color-text-muted);
 }
 
-/* Price change since the product was saved; hover shows the old price. */
+/* Price change since the product was saved, before the price; hover shows the old price. */
 .card__change {
+  order: -1;
   font-weight: 600;
 }
 
@@ -433,6 +744,8 @@
 /* One-line stripe along the bottom edge of the image. */
 .card__note {
   position: absolute;
+  /* Over the shade (1), under the corner controls (2). */
+  z-index: 1;
   right: 0;
   bottom: 0;
   left: 0;
@@ -445,6 +758,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  /* One line when closed; opening grows it to its full text (height: auto), animated in
+     and out (interpolate-size lets height animate to and from auto). */
+  height: calc(1lh + 16px);
+  interpolate-size: allow-keywords;
+  transition:
+    height 0.2s ease,
+    background-color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card__note {
+    transition: none;
+  }
 }
 
 .card__note:active {
@@ -452,16 +778,21 @@
 }
 
 /* Opened by a tap: grows with the text up to the full image, then scrolls. */
+/* Open, it sits straight on the dark shade, without its own tint. */
 .card__note--open {
+  height: auto;
+  background: transparent;
   overflow-y: auto;
   overflow-wrap: anywhere;
   overscroll-behavior: contain;
   white-space: pre-line;
 }
 
-/* With a mouse, hovering opens it the same way. */
+/* With a mouse, hovering anywhere on the card opens it the same way. */
 @media (hover: hover) {
-  .card__note:hover {
+  .card:hover .card__note {
+    height: auto;
+    background: transparent;
     overflow-y: auto;
     overflow-wrap: anywhere;
     overscroll-behavior: contain;
@@ -469,38 +800,87 @@
   }
 }
 
-/* Icon buttons over the top right corner of the image. */
+/* Edit and delete in a row in the top right corner, delete last. */
 .card__actions {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   gap: 8px;
+}
+
+/* Top left corner: a bare grip that hints the card can be dragged, then a checkbox to
+   select it (the whole card is the handle). No backgrounds; a soft shadow keeps them
+   visible on any picture. */
+.card__corner {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  filter: drop-shadow(0 1px 2px var(--blk50p));
+}
+
+/* White when ticked, with a black tick (the browser picks the tick colour to contrast
+   with accent-color); it sits on pictures, so it does not change with the theme. */
+.card__select {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--wht100p);
+  cursor: pointer;
+}
+
+.card__grip {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 32px;
+  color: var(--wht100p);
+  cursor: grab;
+}
+
+/* Ticked cards: an accent outline, and their checkbox stays visible. */
+.card--selected {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+/* Bare icons over the picture, white like the grip with the same soft shadow (the top
+   of the picture is shaded on hover); a light tint marks the one under the pointer. */
+.card__actions {
+  filter: drop-shadow(0 1px 2px var(--blk50p));
 }
 
 .card__actions .button {
   width: 32px;
   padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--wht100p);
 }
 
-/* Over the photo the see-through hover tint is laid on the white surface, so the
-   image never shows through. (Danger's soft reds are already opaque.) */
-.card__actions .button:not(.button--danger):hover {
-  background: linear-gradient(var(--color-surface-hover) 0 0) var(--color-surface);
+.card__actions .button:hover {
+  background: var(--wht10p);
 }
 
-.card__actions .button:not(.button--danger):active {
-  background: linear-gradient(var(--color-surface-active) 0 0) var(--color-surface);
+.card__actions .button:active {
+  background: color-mix(in srgb, var(--wht100p) 20%, transparent);
 }
 
 /* With a mouse the icons show on hover or keyboard focus; touch screens always show them. */
 @media (hover: hover) {
-  .card__actions {
+  .card__actions,
+  .card__corner {
     opacity: 0;
   }
 
   .card:hover .card__actions,
+  .card:hover .card__corner,
+  .grid--selecting .card__corner,
   .card__actions:focus-within {
     opacity: 1;
   }
@@ -519,7 +899,9 @@
   padding: 24px;
   border: var(--border);
   border-radius: var(--radius-large);
-  background: var(--color-surface);
+  /* --color-raised is see-through in dark mode; laid on the page color it stays opaque,
+     so nothing that scrolls under or sits behind shows through. */
+  background: linear-gradient(var(--color-raised) 0 0) var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--shadow);
 }
@@ -532,6 +914,11 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Confirmation text can run over several lines (\n). */
+#confirm-text {
+  white-space: pre-line;
 }
 
 .dialog__title {
@@ -554,7 +941,7 @@
   padding: 8px 16px;
   border-radius: var(--radius);
   background: var(--color-text);
-  color: var(--color-bg);
+  color: var(--color-surface);
   box-shadow: var(--shadow);
   transform: translateX(-50%);
 }
@@ -568,20 +955,28 @@
     padding: 16px;
   }
 
-  .brand,
   .topbar .sidebar__picker,
   .topbar--searching .topbar__search {
     margin-right: 8px;
   }
 
+  .brand {
+    margin-right: 16px;
+  }
+
   /* Only as wide as the chosen list, so the chevron sits right after the name. */
+  /* Reads as part of the title: same size and weight as the app name. */
   .topbar .sidebar__picker {
     display: block;
     flex: 0 1 auto;
     width: auto;
     min-width: 0;
+    padding-block: 0;
+    font-size: 16px;
+    font-weight: 700;
     height: 40px;
     field-sizing: content;
+    padding-left: 16px;
   }
 
   /* Sort shrinks to its icon; the open dropdown still lists the options by name.
@@ -607,12 +1002,6 @@
     color: var(--color-text);
   }
 
-  /* Larger icons in the top bar's icon buttons. */
-  .topbar .topbar__icon-button svg,
-  .topbar .main-head__sort > svg {
-    width: 24px;
-    height: 24px;
-  }
 
   .topbar .main-head__sort > svg {
     left: 50%;
@@ -640,6 +1029,7 @@
   .topbar__search,
   .topbar__search-close,
   .topbar--searching .sidebar__picker,
+  .topbar--searching #add-item,
   .topbar--searching .main-head__sort,
   .topbar--searching .topbar__search-open {
     display: none;
@@ -693,13 +1083,39 @@
     padding-top: 0;
   }
 
-  .main-head__title,
-  .main-head:not(:has(#list-menu:not([hidden]))) {
+  /* The view switch is for desktop for now: on phones its row is mostly hidden. */
+  .view-toggle {
+    display: none;
+  }
+
+  .main-head:not(.main-head--selecting) .main-head__title,
+  .main-head:not(.main-head--selecting):not(:has(#list-menu:not([hidden]))) {
     display: none;
   }
 
   .main {
     --gutter-end: 16px;
     padding: 16px var(--gutter-end) 64px;
+  }
+}
+
+/* Very narrow screens: the app name gives its room to the list picker. It stays for
+   screen readers. */
+@media (max-width: 480px) {
+  .brand {
+    margin-right: 8px;
+  }
+
+  .topbar .sidebar__picker {
+    padding-left: 8px;
+  }
+
+  .brand__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

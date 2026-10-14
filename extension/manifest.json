@@ -23,7 +23,7 @@
     "type": "module"
   },
   "options_page": "src/dashboard.html",
-  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "identity"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "commands": {
     "_execute_action": {
