@@ -43,3 +43,17 @@ Every color comes from this palette, defined at the top of [ui.css](extension/sr
 - Light mode uses the black steps where dark mode uses the white ones (e.g. `--blk5p` hover becomes `--wht5p`).
 - Where a color must be opaque (sticky rows that content scrolls under), mix palette values with `color-mix()` instead of using a translucent step.
 - The only exceptions are the danger reds, since the palette has no red, and the per-item placeholder hue.
+
+## Interaction states
+
+Every control reacts the same way. Hover and press darken the fill one step each; the border keeps its color.
+
+| Control rests on | Hover | Press / open |
+|---|---|---|
+| Nothing (plain: ghost buttons, desktop sort) | `--blk5p` fill + normal border | `--blk10p` |
+| White (regular buttons, list rows, menu items) | `--blk5p` | `--blk10p` |
+| `--blk5p` (fields, top-bar icon buttons) | `--blk10p` | `--blk10p` |
+
+- In dark mode the same steps use the white palette (`--wht5p`, `--wht10p`) through the semantic `--color-surface-hover` / `--color-surface-active` tokens.
+- Borders never darken on hover. The selected state (current list) uses the accent tint, not a gray step.
+- Exceptions with their own colors: primary buttons (accent shades), danger buttons (red), price changes (`--color-price-*-hover`), and cards, which lift with a shadow instead of changing fill.

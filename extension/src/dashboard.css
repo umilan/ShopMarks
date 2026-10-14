@@ -230,9 +230,11 @@
 
 /* Main column */
 
+/* The right gutter matches the top bar's, so sort and cards line up under the settings button. */
 .main {
+  --gutter-end: 24px;
   min-width: 0;
-  padding: 16px;
+  padding: 16px var(--gutter-end) 24px 16px;
 }
 
 /* Stays under the top bar; full-bleed so cards scroll out of sight beneath it. */
@@ -245,8 +247,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: -16px -16px 0;
-  padding: 24px 16px 16px;
+  margin: -16px calc(-1 * var(--gutter-end)) 0 -16px;
+  padding: 24px var(--gutter-end) 16px 16px;
   background: var(--color-bg);
 }
 
@@ -264,6 +266,19 @@
 .main-head__sort .input {
   width: auto;
   height: 40px;
+}
+
+/* In the list heading row sort is plain and only as wide as the chosen option;
+   the field shows on hover. (On mobile it sits in the top bar and keeps its fill.) */
+.main-head .main-head__sort .input {
+  field-sizing: content;
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.main-head .main-head__sort .input:hover {
+  border-color: var(--border-color);
+  background-color: var(--blk5p);
 }
 
 /* Product cards */
@@ -284,7 +299,6 @@
 }
 
 .card:hover {
-  border-color: var(--border-color-hover);
   box-shadow: var(--shadow);
 }
 
@@ -623,6 +637,7 @@
   }
 
   .main {
-    padding: 16px 16px 64px;
+    --gutter-end: 16px;
+    padding: 16px var(--gutter-end) 64px;
   }
 }

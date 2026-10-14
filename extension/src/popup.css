@@ -103,7 +103,6 @@ body {
 }
 
 .pager__button:hover {
-  border-color: var(--border-color-hover);
   background: var(--color-surface-hover);
 }
 
