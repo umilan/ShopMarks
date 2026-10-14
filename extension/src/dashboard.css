@@ -405,7 +405,10 @@ body {
   padding: 16px 0 16px 0;
   /* Covers the cards scrolling beneath. The layout's fill is see-through, so it is laid
      on the page color to match it exactly while staying opaque. */
-  background: linear-gradient(var(--color-field) 0 0) var(--color-surface);
+  /* Matches the page: the same see-through tint, on the same base the page's tint sits
+     on (the browser's own background, the Canvas colour). Opaque, so cards scrolling
+     under it stay hidden. */
+  background: linear-gradient(var(--color-field) 0 0) Canvas;
 }
 
 .main-head__title, .sidebar__title {

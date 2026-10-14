@@ -269,9 +269,10 @@ textarea.input {
   resize: vertical;
 }
 
-/* "Shop" in the app name, in the accent. */
+/* "Shop" in the app name, in the logo's green (the palette accent, the same in both
+   themes like the logo). */
 .name-accent {
-  color: var(--color-accent);
+  color: var(--acc100p);
 }
 
 /* App logo: a white bookmark on the accent tile. Uses the palette directly so it looks
