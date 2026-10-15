@@ -413,6 +413,18 @@ textarea.input {
   color: var(--acc100p);
 }
 
+/* The version (version.js), small over the end of the app name (which must be position:
+   relative), in the logo green. Dashboard top bar and popup header. */
+.app-version {
+  position: absolute;
+  top: 2px;
+  right: -2px;
+  color: var(--acc50p);
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* App logo: a white bookmark on the accent tile. Uses the palette directly so it looks
    the same in both themes (the semantic accent is lightened in dark mode). */
 .logo {

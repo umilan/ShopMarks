@@ -1,4 +1,5 @@
 import './tooltip.js';
+import './version.js';
 import { chosenLists, fillListChoice } from './listchoice.js';
 import {
   connectDropbox,

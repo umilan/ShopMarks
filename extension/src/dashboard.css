@@ -45,6 +45,7 @@ body {
 }
 
 .brand__name {
+  position: relative;
   font-size: 20px;
 }
 

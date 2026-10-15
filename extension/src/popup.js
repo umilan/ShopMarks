@@ -1,4 +1,5 @@
 import './tooltip.js';
+import './version.js';
 import { extractFromTab, startPicker } from './page.js';
 import { fillListChoice, chosenLists } from './listchoice.js';
 import { findByUrl, formatPrice, getState, listsOf, loadRates, rememberLists, saveProduct } from './store.js';

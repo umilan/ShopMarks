@@ -35,7 +35,13 @@ body {
   outline-offset: 2px;
 }
 
+/* The smaller name here: the version sits a little higher to clear the letters. */
+.popup-header__name .app-version {
+  top: -3px;
+}
+
 .popup-header__name {
+  position: relative;
   font-size: 16px;
 }
 
