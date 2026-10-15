@@ -1,9 +1,10 @@
+import './tooltip.js';
 import { extractFromTab, startPicker } from './page.js';
 import { fillListChoice, chosenLists } from './listchoice.js';
 import { findByUrl, formatPrice, getState, listsOf, loadRates, rememberLists, saveProduct } from './store.js';
 
 const $ = (id) => document.getElementById(id);
-const SAVED_DELAY = 3000;
+const SAVED_DELAY = 1000;
 // In the popup the no-list state reads as an action.
 const NO_LIST_LABEL = 'Save to unsorted';
 // popup.html?preview: shown inside the dashboard (click the app title there) with a sample
@@ -30,7 +31,17 @@ let saved = null;
 let images = [];
 let imageIndex = 0;
 
-$('price-target').addEventListener('click', pickPrice);
+$('price-target').addEventListener('click', () => pickSpot('price'));
+$('title-target').addEventListener('click', () => pickSpot('title'));
+// Closing the "not a product" hint keeps it closed on this device.
+$('hint-close').addEventListener('click', () => {
+  $('hint').hidden = true;
+  if (!PREVIEW) chrome.storage.local.set({ hintDismissed: true });
+});$('note-toggle').addEventListener('click', () => {
+  const show = $('note-field').hidden;
+  setNoteShown(show);
+  if (show) $('note').focus();
+});
 $('prev-image').addEventListener('click', () => showImage(imageIndex - 1));
 $('next-image').addEventListener('click', () => showImage(imageIndex + 1));
 $('save-form').addEventListener('submit', save);
@@ -52,13 +63,16 @@ async function init() {
   saved = findByUrl(products, draft.url) ?? null;
   images = [...new Set([saved?.image, ...draft.images].filter(Boolean))];
 
-  $('title').value = saved?.title ?? draft.title;
+  // A product name picked on the page wins over the saved one, as a picked price does.
+  $('title').value = (draft.titleFromSpot ? draft.title : saved?.title) ?? draft.title;
   $('price').value = draft.price ?? saved?.price ?? '';
   currency = draft.currency ?? saved?.currency ?? chosen;
   $('price-label').textContent = `Price (${currency})`;
   $('price-unit').textContent = currency;
   $('note').value = saved?.note ?? '';
-  $('hint').hidden = draft.isProduct || Boolean(saved);
+  setNoteShown(false);
+  const { hintDismissed } = await chrome.storage.local.get('hintDismissed');
+  $('hint').hidden = draft.isProduct || Boolean(saved) || Boolean(hintDismissed);
 
   // A saved item shows its own lists; a new one starts with the lists used last time.
   if (saved) fillListChoice($('lists'), lists, listsOf(saved), NO_LIST_LABEL);
@@ -93,7 +107,9 @@ async function initPreview() {
   fillListChoice($('lists'), lists, lastListIds, NO_LIST_LABEL, { lastUsed: true });
   showImage(0);
   showSavedState();
-  // Elements that normally appear only in some cases are all shown here.
+  // Elements that normally appear only in some cases are all shown here; the note starts
+  // hidden, as in the real popup.
+  setNoteShown(false);
   $('hint').hidden = false;
   $('save-form').hidden = false;
   $('save').hidden = false;
@@ -109,6 +125,13 @@ function showImage(index) {
 
 function showSavedState() {
   $('save').textContent = saved ? 'Update' : 'Save';
+}
+
+// The note field is hidden until the pen button next to the lists opens it.
+function setNoteShown(shown) {
+  $('note-field').hidden = !shown;
+  $('note-toggle').setAttribute('aria-expanded', String(shown));
+  $('note-toggle').title = $('note-toggle').ariaLabel = shown ? 'Hide the note' : 'Add a note';
 }
 
 async function save(event) {
@@ -130,7 +153,7 @@ async function save(event) {
   const { lists } = await getState();
   fillListChoice($('lists'), lists, listsOf(saved), NO_LIST_LABEL);
   $('lists').open = false;
-  // Confirmed on the button itself, with a bar filling it over 3s; then the popup closes.
+  // Confirmed on the button itself, with a bar filling it over 1s; then the popup closes.
   $('status').textContent = '';
   $('save').textContent = 'Saved, closing…';
   $('save').classList.add('button--saved');
@@ -138,11 +161,13 @@ async function save(event) {
 }
 
 // The popup closes once the page is clicked, so the picker takes over from here.
-async function pickPrice() {
-  if (PREVIEW) return ($('status').textContent = 'Preview only: on a shop page this lets you click the price.');
+// kind is 'price' or 'title': which one the user clicks on the page.
+async function pickSpot(kind) {
+  const what = kind === 'title' ? 'product name' : 'price';
+  if (PREVIEW) return ($('status').textContent = `Preview only: on a shop page this lets you click the ${what}.`);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   try {
-    await startPicker(tab.id);
+    await startPicker(tab.id, kind);
     window.close();
   } catch {
     $('status').textContent = 'This page does not allow picking.';

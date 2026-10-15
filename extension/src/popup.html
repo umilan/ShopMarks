@@ -13,25 +13,34 @@
       <svg class="logo" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect class="logo__tile" width="24" height="24" rx="5"/><path class="logo__mark" d="M8.5 6.5h7v11l-3.5-3-3.5 3z"/></svg>
       <h1 class="popup-header__name"><span class="name-accent">Shop</span>Marks</h1>
     </a>
-    <button id="save" class="button button--primary" type="submit" form="save-form" hidden>Save</button>
+    <button id="save" class="button button--primary" type="submit" form="save-form" hidden title="Save this item to ShopMarks (or update it)">Save</button>
   </header>
 
   <p id="message" class="message muted">Reading this page</p>
 
+  <p id="hint" class="hint" hidden>
+    <span class="hint__text">This page doesn't look like a product, but you can still save it.</span>
+    <button id="hint-close" class="hint__close" type="button" title="Hide this message" aria-label="Hide this message"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </p>
   <form id="save-form" class="save-form" hidden>
-    <p id="hint" class="hint" hidden>This doesn't look like a product page. You can still save it.</p>
 
     <div class="field">
       <span class="field__label">Lists</span>
-      <details id="lists" class="list-choice">
-        <summary class="input list-choice__summary"></summary>
-        <div class="list-choice__panel">
-          <div class="list-choice__options"></div>
-          <input class="input list-choice__new" maxlength="60" autocomplete="off" placeholder="New list name" aria-label="New list name">
-        </div>
-      </details>
+      <div class="input-group list-row">
+        <details id="lists" class="list-choice">
+          <summary class="input list-choice__summary"></summary>
+          <div class="list-choice__panel">
+            <div class="list-choice__options"></div>
+            <div class="list-choice__new-row">
+              <input type="checkbox" class="list-choice__new-box" tabindex="-1" aria-hidden="true">
+              <input class="list-choice__new" maxlength="60" autocomplete="off" placeholder="Create new list..." aria-label="Create new list">
+            </div>
+          </div>
+        </details>
+        <button id="note-toggle" class="button button--ghost icon-button" type="button" title="Add a note" aria-label="Add a note" aria-controls="note-field" aria-expanded="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path class="note-toggle__plus" d="M12 7v6"/><path d="M9 10h6"/></svg></button>
+      </div>
     </div>
-    <label class="field">
+    <label id="note-field" class="field" hidden>
       <span class="field__label">Note</span>
       <textarea id="note" class="input" rows="2" placeholder="Add custom note (optional)"></textarea>
     </label>
@@ -44,17 +53,20 @@
           <img id="image" alt="" referrerpolicy="no-referrer">
         </div>
         <div id="pager" class="pager">
-          <button id="prev-image" class="pager__button" type="button" aria-label="Previous image">‹</button>
+          <button id="prev-image" class="pager__button" type="button" aria-label="Previous image" title="Previous picture">‹</button>
           <span id="image-index" class="muted"></span>
-          <button id="next-image" class="pager__button" type="button" aria-label="Next image">›</button>
+          <button id="next-image" class="pager__button" type="button" aria-label="Next image" title="Next picture">›</button>
         </div>
       </div>
       <div class="preview__fields">
-        <label class="field">
-          <span class="field__label">Title</span>
-          <textarea id="title" class="input" rows="3" placeholder="Title" required></textarea>
-        </label>
-        <div class="price-row">
+        <div class="input-group title-row">
+          <label class="field">
+            <span class="field__label">Title</span>
+            <textarea id="title" class="input" rows="3" placeholder="Title" required></textarea>
+          </label>
+          <button id="title-target" class="button button--ghost icon-button" type="button" title="Show where the product name is on the page" aria-label="Show where the product name is on the page"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h3"/><path d="M19 12h3"/><path d="M12 2v3"/><path d="M12 19v3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="input-group price-row">
           <label class="field">
             <span id="price-label" class="field__label">Price</span>
             <span class="price-field">

@@ -8,7 +8,7 @@ body {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   padding: 16px;
   border-bottom: 0px var(--border);
   /* --color-raised is see-through in dark mode; laid on the page color it stays opaque,
@@ -50,11 +50,20 @@ body {
 
 .topbar__search {
   flex: 1;
+  margin: 0 8px;
 }
 
 .topbar__search .input {
   height: 40px;
   padding: 8px 16px 8px 40px;
+}
+
+/* Search, add and settings together at the right edge of the top bar. */
+.topbar__end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .topbar__actions {
@@ -82,11 +91,15 @@ body {
   width: 40px;
   height: 40px;
   padding: 0;
-  background: var(--color-field);
+  /* Plain: no fill at rest (a regular button rests on the surface colour, black in dark mode). */
+  background: transparent;
 }
 
-/* Resting fill already matches the usual button hover, so hover goes one step darker. */
-.topbar__icon-button:hover,
+/* Plain controls (no resting fill): hover is the usual hover step; an open menu keeps the pressed step. */
+.topbar__icon-button:hover {
+  background: var(--color-surface-hover);
+}
+
 .menu__toggle[aria-expanded="true"] {
   background: var(--color-surface-active);
 }
@@ -98,7 +111,7 @@ body {
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0px;
   min-width: 200px;
   padding: 8px;
   border: var(--border);
@@ -156,6 +169,52 @@ body {
   border-top: var(--border);
 }
 
+/* On small screens sorting sits at the top of the settings menu, full width. */
+#menu #sort {
+  width: 100%;
+}
+
+#menu #sort-field {
+  margin: 4px 0 8px;
+}
+
+/* The Dropbox group continues the backup group: no line and no extra space above it, just
+   the usual 2px between items. */
+#dropbox-menu {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Where there is no backup folder (the web app), Dropbox starts the section and takes its line. */
+#backup-menu[hidden] + #dropbox-menu {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: var(--border);
+}
+
+/* A menu item with a small ⋯ menu at its end (Backup folder, Sync with Dropbox). */
+.menu__split {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.menu__split > .menu__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu__more {
+  flex: none;
+}
+
+.menu__more-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
 .menu__note {
   max-width: 240px;
   padding: 8px 16px;
@@ -165,6 +224,13 @@ body {
 
 .menu__item:hover {
   background: var(--color-surface-hover);
+}
+
+/* Items that are links look like the buttons: no underline, text colour. */
+a.menu__item,
+a.menu__item:hover {
+  color: inherit;
+  text-decoration: none;
 }
 
 .menu__item:active {
@@ -239,6 +305,7 @@ body {
 .sidebar__new {
   width: 32px;
   padding: 0;
+  margin-right: 2px;
 }
 
 .sidebar__lists {
@@ -257,7 +324,7 @@ body {
   justify-content: space-between;
   gap: 8px;
   min-height: 40px;
-  padding: 0 16px;
+  padding: 0 2px 0 16px;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -271,6 +338,77 @@ body {
   background: var(--color-surface-hover);
 }
 
+/* A list row: the link fills it; on hover (or with the touch layout always) the count gives
+   way to a ⋯ button that opens rename and remove. */
+.list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+}
+
+/* The row with an open menu sits above the rows after it, so its sheet covers them. */
+.list-row:has([aria-expanded="true"]) {
+  z-index: 3;
+}
+
+.list-row > .list-link {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The whole row takes the hover fill, so the ⋯ button sits inside it. */
+.list-row:hover,
+.list-row:has([aria-expanded="true"]) {
+  background: var(--color-surface-hover);
+}
+
+/* On the row's fill, the button's hover goes one step further. */
+.list-row .list-link__more:hover {
+  background: var(--color-surface-active);
+}
+
+/* Laid over the row's right end, exactly over the count (the link's 16px padding, 32px wide),
+   so it takes no room and every count lines up. */
+.list-row > .list-link__menu {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  translate: 0 -50%;
+}
+
+.list-row .list-link__more {
+  display: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--acc100p);
+  background: var(--acc10p);
+}
+
+.list-row:hover .list-link__more,
+.list-row .list-link__more[aria-expanded="true"] {
+  display: inline-flex;
+}
+
+/* Only rows with a ⋯ menu (the user's lists) give up their count; All Items, Unsorted and
+   Trash keep it. */
+.list-row:has(.list-link__menu):hover .list-link__count,
+.list-row:has([aria-expanded="true"]) .list-link__count {
+  display: none;
+}
+
+@media (hover: none) {
+  .list-row .list-link__more {
+    display: inline-flex;
+  }
+
+  /* Every row leaves room for the ⋯, so the counts still line up. */
+  .list-row .list-link {
+    padding-right: 48px;
+  }
+}
+
 .list-link:active {
   background: var(--color-surface-active);
 }
@@ -282,7 +420,8 @@ body {
 }
 
 /* Dragging a card: the lists it can go to are outlined, the one under the pointer filled. */
-.dragging-card .list-link:not(:first-child) {
+.dragging-card #lists > :not(:first-child) .list-link,
+.dragging-card #lists > .list-link:not(:first-child) {
   outline: 1px dashed var(--border-color);
   outline-offset: -1px;
 }
@@ -376,7 +515,10 @@ body {
   white-space: nowrap;
 }
 
+/* As wide as the ⋯ button that replaces it on hover, centred, so both share one centre line. */
 .list-link__count {
+  min-width: 32px;
+  text-align: center;
   color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 400;
@@ -667,11 +809,32 @@ body {
   overflow-wrap: anywhere;
 }
 
+.card__image {
+  overflow: hidden;
+}
+
+/* Both pictures share the one grid cell; the sharp one is later, so it sits on top. */
 .card__image img {
+  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
   padding: 0px;
   object-fit: contain;
+}
+
+/* Behind the picture: the same picture filling the area, blurred at full strength, like a
+   video thumbnail of a portrait clip. Scaled up so the blur's soft edges fall outside the
+   clipped area. */
+.card__image .card__backdrop {
+  object-fit: cover;
+  filter: blur(32px);
+  scale: 5;
+}
+
+/* The blur and scale lift the backdrop into a later paint layer, over plain content; the
+   sharp picture joins that layer too, and coming later it paints on top. */
+.card__image img:not(.card__backdrop) {
+  position: relative;
 }
 
 .card__body {
@@ -699,6 +862,13 @@ body {
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Search matches in a card: yellow with black text, in both themes. */
+.card mark {
+  background: #ffe066;
+  color: #000;
+  border-radius: 2px;
 }
 
 .card__title {
@@ -867,7 +1037,7 @@ body {
 }
 
 .card__actions .button:hover {
-  background: var(--wht10p);
+  background: var(--color-surface-hover);
 }
 
 .card__actions .button:active {
@@ -916,7 +1086,7 @@ body {
 .dialog__form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 /* Confirmation text can run over several lines (\n). */
@@ -928,11 +1098,41 @@ body {
   font-size: 20px;
 }
 
+/* Cancel sits on the same grey as the fields above it; hover goes one step up, as on fields. */
+.dialog [value="cancel"] {
+  background: var(--color-field);
+  color: var(--color-text);
+}
+
+.dialog [value="cancel"]:hover {
+  background: var(--color-surface-active);
+}
+
+/* Numbered setup steps in a dialog (Connect Dropbox). */
+.dialog__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.dialog__steps b {
+  color: var(--color-text);
+}
+
+/* A value to copy: one click selects all of it. */
+.dialog__copy {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 .dialog__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 .toast {
@@ -989,9 +1189,9 @@ body {
     margin-left: auto;
   }
 
-  /* Sort's margin alone takes the free space; settings giving it a second share split the icons apart. */
+  /* Sorting is in the settings menu now, so the icon buttons take the free space and sit at the right edge. */
   .topbar__actions {
-    margin-left: 0;
+    margin-left: auto;
   }
 
   .topbar .main-head__sort .input {
@@ -1100,6 +1300,55 @@ body {
     --gutter-end: 16px;
     padding: 16px var(--gutter-end) 64px;
   }
+}
+
+/* In the edit dialog the title and note are both 96px tall, and the title sits level with
+   the picture and pager (96 + 8 + 40) beside it, price included. */
+#edit-title,
+#edit-note {
+  height: 96px;
+}
+
+/* Marks the end of the shown cards: the next batch loads when it comes near (dashboard.js). */
+.grid-more {
+  height: 1px;
+}
+
+/* Every field in the edit dialog is 8px from the next, as inside the preview. */
+#edit-dialog .dialog__form {
+  gap: 8px;
+}
+
+/* Lists and note: the label sits left of the field, in the thumbnail's 96px column. */
+#edit-dialog .field--side {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+#edit-dialog .field--side .field__label {
+  position: static;
+  width: auto;
+  height: 40px;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/* The fields name themselves by their placeholder or value, as in the popup. The labels stay
+   for screen readers. */
+#edit-dialog .field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Very narrow screens: the app name gives its room to the list picker. It stays for

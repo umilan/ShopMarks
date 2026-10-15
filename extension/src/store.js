@@ -117,6 +117,17 @@ export async function setPriceSpot(url, spot) {
   await chrome.storage.local.set({ priceSpots: { ...spots, [storeOf(url)]: spot } });
 }
 
+// { [shop]: { selector } }: where the shop shows the product name, picked like the price spot.
+export async function titleSpotFor(url) {
+  const { titleSpots: spots = {} } = await chrome.storage.local.get('titleSpots');
+  return spots[storeOf(url)] ?? null;
+}
+
+export async function setTitleSpot(url, spot) {
+  const { titleSpots: spots = {} } = await chrome.storage.local.get('titleSpots');
+  await chrome.storage.local.set({ titleSpots: { ...spots, [storeOf(url)]: spot } });
+}
+
 export function rememberLists(listIds) {
   return chrome.storage.local.set({ lastListIds: listIds });
 }

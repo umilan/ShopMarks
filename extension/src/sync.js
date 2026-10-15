@@ -7,11 +7,11 @@
 // Sign-in is Dropbox OAuth with PKCE (no server or secret): in the extension through
 // chrome.identity, in the web app by sending the page to Dropbox and back.
 
-import { DROPBOX_APP_KEY } from './config.js';
 import { applySyncData, mergeData, sameData, syncData } from './store.js';
 
 const FILE = '/shopmarks.json';
 const KEY = 'dropbox';
+const APP_KEY = 'dropboxAppKey';
 const LOCK = 'shopmarks-sync';
 const SYNC_DELAY = 2000;
 const VERIFIER = 'shopmarks-dropbox-verifier';
@@ -20,7 +20,16 @@ const WEB = Boolean(globalThis.shopMarksWeb);
 let accessToken = null;
 let accessTokenExpires = 0;
 
-export const dropboxConfigured = Boolean(DROPBOX_APP_KEY);
+// The Dropbox app key (App Console → your app → App key) is asked for in the dashboard and
+// kept on this device. It is public (PKCE), so storing it is fine. Setup: DROPBOX.md.
+export async function dropboxAppKey() {
+  const { [APP_KEY]: key } = await chrome.storage.local.get(APP_KEY);
+  return key ?? '';
+}
+
+export async function saveDropboxAppKey(key) {
+  await chrome.storage.local.set({ [APP_KEY]: key.trim() });
+}
 
 // state is 'off' (not connected) or 'on'; lastSync is a timestamp.
 export async function dropboxStatus() {
@@ -28,13 +37,14 @@ export async function dropboxStatus() {
   return account ? { state: 'on', name: account.name, lastSync: account.lastSync } : { state: 'off' };
 }
 
-function redirectUri() {
+// Where Dropbox sends the user back after sign-in; it must be listed in the Dropbox app.
+export function redirectUri() {
   return WEB ? `${location.origin}${location.pathname}` : chrome.identity.getRedirectURL('dropbox');
 }
 
-function authorizeUrl(challenge) {
+function authorizeUrl(appKey, challenge) {
   const params = new URLSearchParams({
-    client_id: DROPBOX_APP_KEY,
+    client_id: appKey,
     response_type: 'code',
     code_challenge: challenge,
     code_challenge_method: 'S256',
@@ -47,15 +57,16 @@ function authorizeUrl(challenge) {
 // Extension: resolves once connected. Web app: leaves for Dropbox; the page comes back
 // with a code that finishDropboxRedirect() turns into the connection.
 export async function connectDropbox() {
-  if (!dropboxConfigured) throw new Error('No Dropbox app key in config.js');
+  const appKey = await dropboxAppKey();
+  if (!appKey) throw new Error('No Dropbox app key yet');
   const verifier = randomString();
   const challenge = base64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
   if (WEB) {
     sessionStorage.setItem(VERIFIER, verifier);
-    location.assign(authorizeUrl(challenge));
+    location.assign(authorizeUrl(appKey, challenge));
     return new Promise(() => {}); // The page is leaving.
   }
-  const returned = await chrome.identity.launchWebAuthFlow({ url: authorizeUrl(challenge), interactive: true });
+  const returned = await chrome.identity.launchWebAuthFlow({ url: authorizeUrl(appKey, challenge), interactive: true });
   await finishConnect(new URL(returned).searchParams.get('code'), verifier);
 }
 
@@ -82,6 +93,17 @@ async function finishConnect(code, verifier) {
 export async function disconnectDropbox() {
   accessToken = null;
   await chrome.storage.local.remove(KEY);
+}
+
+// Back to the first-time state: no app key, no sign-in, no half-finished sign-in. The file
+// in Dropbox is not touched.
+export async function resetDropbox() {
+  accessToken = null;
+  accessTokenExpires = 0;
+  await chrome.storage.local.remove([KEY, APP_KEY]);
+  try {
+    sessionStorage.removeItem(VERIFIER);
+  } catch {}
 }
 
 // Merges this device with the file in Dropbox. Returns false when not connected.
@@ -169,7 +191,7 @@ function rememberAccess(token) {
 async function tokenRequest(params) {
   const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
     method: 'POST',
-    body: new URLSearchParams({ ...params, client_id: DROPBOX_APP_KEY }),
+    body: new URLSearchParams({ ...params, client_id: await dropboxAppKey() }),
   });
   if (!response.ok) throw new Error(`Dropbox sign-in: ${response.status}`);
   return response.json();

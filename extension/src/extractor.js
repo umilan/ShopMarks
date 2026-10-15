@@ -132,7 +132,17 @@
     return best && { price: best.price, currency: best.currency };
   }
 
-  function pageImages(doc) {
+  // A page read as HTML (fetched, not open in a tab) has no loaded pictures, so their real
+  // size is unknown: then only pictures that do not declare themselves small are taken.
+  function pageImages(doc, fetched) {
+    if (fetched) {
+      const declared = (value) => (value == null ? Infinity : Number(value));
+      const srcOf = (img) => img.getAttribute('src') || img.getAttribute('data-src');
+      return [...doc.images]
+        .filter((img) => srcOf(img) && declared(img.getAttribute('width')) >= 200 && declared(img.getAttribute('height')) >= 200)
+        .slice(0, 8)
+        .map(srcOf);
+    }
     return [...doc.images]
       .filter((img) => img.naturalWidth >= 200 && img.naturalHeight >= 200)
       .sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)
@@ -148,6 +158,15 @@
   // The price at a spot the user pointed out on this shop (see picker.js): the label next
   // to it ("Cena:"), which survives rows moving around, else a CSS selector. Older spots
   // are a bare selector string.
+  function spotText(doc, spot) {
+    if (!spot?.selector) return null;
+    try {
+      return clean(doc.querySelector(spot.selector)?.textContent) || null;
+    } catch {
+      return null; // Not a valid selector any more.
+    }
+  }
+
   function spotPrice(doc, spot) {
     if (!spot) return null;
     const { selector, label } = typeof spot === 'string' ? { selector: spot } : spot;
@@ -204,7 +223,11 @@
     }
 
     const siteName = meta(doc, 'og:site_name');
+    // options.titleSpot: where this shop shows the product name, picked by the user; it wins
+    // over everything read automatically, like the price spot.
+    const spotTitle = spotText(doc, options.titleSpot);
     const title =
+      spotTitle ||
       clean(ld?.name) ||
       clean(meta(doc, 'og:title', 'twitter:title')) ||
       clean(micro?.name) ||
@@ -216,7 +239,7 @@
       meta(doc, 'og:image:secure_url', 'og:image'),
       meta(doc, 'twitter:image'),
       micro?.image,
-      ...pageImages(doc),
+      ...pageImages(doc, options.fetched),
     ].map(absolute).filter(Boolean);
 
     // A canonical URL drops tracking noise, but some shops point it at the home
@@ -228,6 +251,7 @@
     return {
       url: usable ? canonical : page.href,
       title,
+      titleFromSpot: Boolean(spotTitle),
       images: [...new Set(images)].slice(0, 12),
       price: found?.price ?? null,
       currency,

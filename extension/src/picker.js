@@ -1,9 +1,12 @@
-// Injected into a shop page by the popup's target button (after extractor.js). Outlines
-// whatever is under the pointer; a click on the price reports where it is (a CSS selector)
-// to the background worker, which remembers it for this shop. Esc cancels.
+// Injected into a shop page by the popup's target buttons (after extractor.js). Outlines
+// whatever is under the pointer; a click on the price, or on the product name, reports where
+// it is (a CSS selector) to the background worker, which remembers it for this shop. Which
+// of the two is picked comes in __shopMarksPickKind (page.js). Esc cancels.
 (() => {
   if (globalThis.__shopMarksPicker) return;
   globalThis.__shopMarksPicker = true;
+  const kind = globalThis.__shopMarksPickKind === 'title' ? 'title' : 'price';
+  const WHAT = kind === 'title' ? 'product name' : 'price';
 
   const ACCENT = 'rgb(25, 100, 50)';
   const box = document.createElement('div');
@@ -32,7 +35,7 @@
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
     pointerEvents: 'none',
   });
-  banner.textContent = 'ShopMarks: click the price (Esc to cancel)';
+  banner.textContent = `ShopMarks: click the ${WHAT} (Esc to cancel)`;
   document.documentElement.append(box, banner);
 
   let target = null;
@@ -49,9 +52,18 @@
       width: `${rect.width + 4}px`,
       height: `${rect.height + 4}px`,
     });
-    banner.textContent = globalThis.SaverExtract.parsePrice(el.textContent) == null
-      ? 'ShopMarks: no price here, keep looking (Esc to cancel)'
-      : `ShopMarks: click to use ${el.textContent.replace(/\s+/g, ' ').trim().slice(0, 40)}`;
+    const value = valueOf(el);
+    banner.textContent = value == null
+      ? `ShopMarks: no ${WHAT} here, keep looking (Esc to cancel)`
+      : `ShopMarks: click to use ${value.slice(0, 40)}`;
+  }
+
+  // The text the element would give: a price, or a product name (any short text). Null when
+  // the element does not hold one.
+  function valueOf(el) {
+    const text = el.textContent.replace(/\s+/g, ' ').trim();
+    if (kind === 'title') return text && text.length <= 300 ? text : null;
+    return globalThis.SaverExtract.parsePrice(el.textContent) == null ? null : text;
   }
 
   function onClick(event) {
@@ -59,16 +71,17 @@
     event.preventDefault();
     event.stopPropagation();
     const el = target;
-    const price = el && globalThis.SaverExtract.parsePrice(el.textContent);
-    if (price == null) return;
+    if (!el || valueOf(el) == null) return;
     const selector = selectorFor(el);
     stop();
     banner.textContent = selector
-      ? 'ShopMarks: price spot saved. Open ShopMarks again to finish.'
-      : 'ShopMarks: could not remember that spot. Try clicking the number itself.';
+      ? `ShopMarks: ${WHAT} spot saved. Open ShopMarks again to finish.`
+      : `ShopMarks: could not remember that spot. Try clicking the ${kind === 'title' ? 'name' : 'number'} itself.`;
     document.documentElement.append(banner);
     setTimeout(() => banner.remove(), 4000);
-    if (selector) chrome.runtime.sendMessage({ type: 'price-spot', url: location.href, spot: { selector, label: labelFor(el) } });
+    if (!selector) return;
+    if (kind === 'title') chrome.runtime.sendMessage({ type: 'title-spot', url: location.href, spot: { selector } });
+    else chrome.runtime.sendMessage({ type: 'price-spot', url: location.href, spot: { selector, label: labelFor(el) } });
   }
 
   function onKey(event) {

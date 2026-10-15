@@ -4,15 +4,28 @@
 // Markup (see popup.html):
 //   <details class="list-choice">
 //     <summary class="input list-choice__summary"></summary>
-//     <div class="list-choice__options"></div>
-//     <input class="input list-choice__new" placeholder="New list name">
+//     <div class="list-choice__panel">
+//       <div class="list-choice__options"></div>
+//       <div class="list-choice__new-row">
+//         <input type="checkbox" class="list-choice__new-box">
+//         <input class="list-choice__new" placeholder="Create new list...">
+//       </div>
+//     </div>
 //   </details>
 
 import { NO_LIST_NAME, createList } from './store.js';
 
+// A details element stays open when you click elsewhere; the sheet closes on any press
+// outside it, so only one picker is open at a time.
+document.addEventListener('pointerdown', (event) => {
+  for (const root of document.querySelectorAll('.list-choice[open]')) {
+    if (!root.contains(event.target)) root.open = false;
+  }
+});
+
 // Fills the choice with the lists, ticking the selected ones. emptyLabel names the
 // "no list" state, e.g. "Unsorted". With lastUsed, the selection is the one used last
-// time and reads "Last used (…)" until it is changed, "Last used (Unsorted)" for none.
+// time and reads "Save to last used (…)" until it is changed, "Save to last used (Unsorted)" for none.
 export function fillListChoice(root, lists, selected, emptyLabel, { lastUsed = false } = {}) {
   root.dataset.empty = emptyLabel;
   if (lastUsed) root.dataset.lastUsed = [...selected].sort().join();
@@ -50,8 +63,9 @@ function summarize(root) {
   const names = checked.map((box) => box.dataset.name);
   const typed = root.querySelector('.list-choice__new').value.trim();
   if (typed) names.push(typed);
+  root.querySelector('.list-choice__new-box').checked = Boolean(typed);
   const untouched = !typed && 'lastUsed' in root.dataset && checked.map((box) => box.value).sort().join() === root.dataset.lastUsed;
   const summary = root.querySelector('.list-choice__summary');
-  if (untouched) summary.textContent = `Last used (${names.length ? names.join(', ') : NO_LIST_NAME})`;
+  if (untouched) summary.textContent = `Save to last used (${names.length ? names.join(', ') : NO_LIST_NAME})`;
   else summary.textContent = names.length ? names.join(', ') : root.dataset.empty;
 }

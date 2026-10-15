@@ -1,7 +1,7 @@
 import { startBackup } from './backup.js';
 import { startDropboxSync } from './sync.js';
 import { extractFromTab } from './page.js';
-import { findByUrl, getState, saveProduct, setPriceSpot, updateProduct } from './store.js';
+import { findByUrl, getState, saveProduct, setPriceSpot, setTitleSpot, updateProduct } from './store.js';
 
 const MENU_ID = 'saver-save-page';
 const BADGE_OK = '#1f6f5c';
@@ -38,11 +38,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
-// The popup's picker found the price on a shop page: remember the spot for that shop and
-// reopen the popup, which then reads the price from there (openPopup needs Chrome 127).
+// The popup's picker found the price or the product name on a shop page: remember the spot
+// for that shop and reopen the popup, which then reads it from there (openPopup needs Chrome 127).
 chrome.runtime.onMessage.addListener((message, sender) => {
-  if (message?.type !== 'price-spot' || !sender.tab) return;
-  setPriceSpot(message.url, message.spot)
+  if (!sender.tab) return;
+  const save = { 'price-spot': setPriceSpot, 'title-spot': setTitleSpot }[message?.type];
+  if (!save) return;
+  save(message.url, message.spot)
     .then(() => chrome.action.openPopup?.())
     .catch(() => {});
 });
