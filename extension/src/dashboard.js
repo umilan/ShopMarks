@@ -120,6 +120,7 @@ $('delete-list').addEventListener('click', deleteCurrentList);
 $('check-prices').addEventListener('click', checkPrices);
 $('add-item').addEventListener('click', addByLink);
 $('dropbox-connect').addEventListener('click', () => connectToDropbox());
+$('help-open').addEventListener('click', () => $('help-dialog').showModal());
 $('dropbox-manage').addEventListener('click', () => connectToDropbox(true));
 $('dropbox-clear').addEventListener('click', clearDropboxSetup);
 $('dropbox-sync').addEventListener('click', () => runSync(true));

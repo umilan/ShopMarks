@@ -75,7 +75,8 @@
           <button id="import" class="menu__item" type="button" role="menuitem" title="Add items and lists from a JSON file"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span class="menu__label">Import</span></button>
         </div>
         <div class="menu__group">
-          <a class="menu__item" href="https://github.com/umilan/ShopMarks" target="_blank" rel="noopener" role="menuitem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="menu__label">Chrome extension (.zip)</span></a>
+          <button id="help-open" class="menu__item" type="button" role="menuitem" title="What ShopMarks does and how to use it"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="menu__label">How to use it</span></button>
+          <a class="menu__item" href="https://github.com/umilan/shopmarks/archive/refs/heads/main.zip" rel="noopener" role="menuitem" title="Download the latest version; unzip it and load its extension folder in chrome://extensions"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="menu__label">Chrome extension (.zip)</span></a>
         </div>
       </div>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
@@ -216,6 +217,56 @@
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button class="button button--primary" value="ok" title="Save the App key and continue">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="help-dialog" class="dialog dialog--scroll" closedby="any" aria-labelledby="help-title">
+    <form method="dialog" class="dialog__form">
+      <h2 id="help-title" class="dialog__title">How to use ShopMarks</h2>
+      <div class="help">
+        <h3>Save a product</h3>
+        <ul>
+          <li>Open a product page in any online shop and click the ShopMarks icon in the toolbar. You can also press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or right-click the page and choose <b>Save this product to ShopMarks</b>.</li>
+          <li>The popup reads the title, picture, price and currency. Change anything before saving; step through the pictures with ‹ ›.</li>
+          <li>Pick one or more lists, or type a new list name at the bottom of the picker. The lists you used last time are chosen already.</li>
+          <li>The speech-bubble button next to the lists adds a note.</li>
+          <li>Price or name read wrong? Click the target button next to it, then click the right text on the page. ShopMarks remembers that spot for the shop.</li>
+          <li>Opening the popup on a page you already saved lets you update it, and a new price is added to its price history.</li>
+        </ul>
+
+        <h3>Your saved items</h3>
+        <ul>
+          <li>Open this page from the logo in the popup.</li>
+          <li>Lists are on the left (on small screens, in the dropdown at the top): All Items, Unsorted and your own lists. <b>+</b> creates a list; <b>⋯</b> on a list renames or removes it.</li>
+          <li>Search, sort and switch between grid and list view at the top.</li>
+          <li>Point at a card to edit it (title, price, lists, note, picture) or delete it. Tick its checkbox to select several, then use <b>Select all</b> or <b>Delete selected</b>.</li>
+          <li>Drag cards onto a list to move them there, or onto <b>Trash</b> to delete them.</li>
+          <li><b>+</b> in the top bar adds an item from a link.</li>
+          <li><b>Update prices</b> in the settings menu reads the current price of every item shown. Chrome asks for access to those shops first.</li>
+        </ul>
+
+        <h3>Keep a copy</h3>
+        <ul>
+          <li><b>Export</b> saves all items and lists to a JSON file; <b>Import</b> adds them back from one.</li>
+          <li><b>Backup folder</b>: pick a folder (one inside Dropbox works well) and ShopMarks rewrites <code>saver-backup.json</code> there after every change. Its <b>⋯</b> has Manage and Reset to default.</li>
+        </ul>
+
+        <h3>Sync and your phone</h3>
+        <ul>
+          <li><b>Sync with Dropbox</b> keeps one file in your Dropbox that every connected device shares. The first time, it shows the setup steps and asks for your Dropbox App key.</li>
+          <li>This page also runs as a web app on a phone: open it in Safari, choose Share → <b>Add to Home Screen</b>, then connect Dropbox there too.</li>
+          <li>The web app cannot read shop pages: it saves the link, and the price fills in on the next <b>Update prices</b> on a computer.</li>
+        </ul>
+
+        <h3>Install the extension</h3>
+        <ul>
+          <li>Download <b>Chrome extension (.zip)</b> from the settings menu and unzip it.</li>
+          <li>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and choose the <code>extension</code> folder inside.</li>
+        </ul>
+      </div>
+      <div class="dialog__actions">
+        <button class="button button--primary" value="ok" title="Close this guide">Got it</button>
       </div>
     </form>
   </dialog>
