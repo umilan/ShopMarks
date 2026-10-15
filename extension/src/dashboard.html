@@ -113,10 +113,14 @@
               <option value="title-desc">Product name Z–A</option>
             </select>
           </div>
-          <button id="view-toggle" class="button button--ghost view-toggle" type="button" title="List view" aria-label="List view" aria-pressed="false">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-toggle__list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-toggle__grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-          </button>
+          <div id="view-field" class="input-icon view-field" data-layout="grid">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-field__grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-field__list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>
+            <select id="view" class="input" aria-label="View" title="Show items as a grid or a list">
+              <option value="grid">Grid</option>
+              <option value="list">List</option>
+            </select>
+          </div>
           <button id="select-toggle" class="button button--ghost" type="button" hidden title="Select several items to delete them together">Select all</button>
           <button id="delete-selected" class="button button--ghost button--danger" type="button" hidden title="Delete the selected items">Delete selected</button>
           <div id="list-menu" class="menu">

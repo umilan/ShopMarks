@@ -461,19 +461,73 @@ a.menu__item:hover {
   bottom: -1px;
 }
 
+/* Held over a list long enough: the line drops under it, indented one level, where the
+   dragged list will go as its first sub-list. */
+.list-row[data-drop="inside"]::before {
+  bottom: -1px;
+  left: calc(16px + (var(--depth, 0) + 1) * 16px);
+}
+
 /* The row with an open menu sits above the rows after it, so its sheet covers them. */
-.list-row:has([aria-expanded="true"]) {
+.list-row:has(.list-link__more[aria-expanded="true"]) {
   z-index: 3;
+}
+
+/* Top-level names line up with the "Lists" heading: the row reaches 16px into the sidebar's
+   padding, where a list's chevron hangs left of its name. Sub-lists indent 16px per level. */
+.list-row {
+  margin-left: -16px;
+}
+
+/* Inside a row the row takes the hover fill; the link adding its own would stack two
+   translucent fills (twice as strong as other buttons in dark mode). */
+.list-row > .list-link:not([aria-current="true"]):hover {
+  background: transparent;
 }
 
 .list-row > .list-link {
   flex: 1;
   min-width: 0;
+  padding-left: calc(16px + var(--depth, 0) * 16px);
+}
+
+/* Folds a list's sub-lists away; points right when folded, down when open. */
+.list-chevron {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--depth, 0) * 16px);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  translate: 0 -50%;
+}
+
+.list-chevron:hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+.list-chevron svg {
+  width: 14px;
+  height: 14px;
+  transition: rotate 0.15s;
+}
+
+.list-chevron[aria-expanded="true"] svg {
+  rotate: 90deg;
 }
 
 /* The whole row takes the hover fill, so the ⋯ button sits inside it. */
 .list-row:hover,
-.list-row:has([aria-expanded="true"]) {
+.list-row:has(.list-link__more[aria-expanded="true"]) {
   background: var(--color-surface-hover);
 }
 
@@ -508,7 +562,7 @@ a.menu__item:hover {
 /* Only rows with a ⋯ menu (the user's lists) give up their count; All Items, Unsorted and
    Trash keep it. */
 .list-row:has(.list-link__menu):hover .list-link__count,
-.list-row:has([aria-expanded="true"]) .list-link__count {
+.list-row:has(.list-link__more[aria-expanded="true"]) .list-link__count {
   display: none;
 }
 
@@ -544,14 +598,14 @@ a.menu__item:hover {
    only those lists move their name right to make room. */
 .dragging-card .list-link[data-list-id]:not(.list-link--disabled) {
   position: relative;
-  padding-left: 40px;
+  padding-left: calc(40px + var(--depth, 0) * 16px);
   background: var(--color-surface-hover);
 }
 
 .dragging-card .list-link[data-list-id]:not(.list-link--disabled)::before {
   content: "→";
   position: absolute;
-  left: 8px;
+  left: calc(8px + var(--depth, 0) * 16px);
   top: 50%;
   translate: 0 -50%;
   color: var(--color-primary);
@@ -598,6 +652,11 @@ a.menu__item:hover {
 .dragging-card .list-link[data-list-id].list-link--drop:not(.list-link--disabled) .list-link__count,
 .dragging-card .list-link[data-list-id].list-link--drop:not(.list-link--disabled)::before {
   color: var(--color-on-primary);
+}
+
+/* While a card is dragged the drop arrows take the chevrons' place. */
+.dragging-card .list-chevron {
+  visibility: hidden;
 }
 
 /* Trash: shown at the end of the lists only while a card is dragged. Under the pointer it
@@ -846,15 +905,29 @@ a.menu__item:hover {
   padding: 0;
 }
 
-/* The view switch shows the icon of the view it switches to. */
-.view-toggle {
-  width: 40px;
+/* The view picker: a dropdown like sort, showing only the icon of the view in use and a
+   chevron; the open list names the views. */
+/* Icon at 16–32px, chevron at 40–56px: the same 8px gap as between sort's icon and text. */
+.view-field .input {
+  width: 68px;
   height: 40px;
-  padding: 0;
+  /* Paddings (40 left for the icon + 28) must not add up to more than the width. */
+  padding-right: 28px;
+  background-color: transparent;
+  background-position: right 12px center;
+  color: transparent;
 }
 
-.view-toggle[aria-pressed="false"] .view-toggle__grid,
-.view-toggle[aria-pressed="true"] .view-toggle__list {
+.view-field .input:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.view-field option {
+  color: var(--color-text);
+}
+
+.view-field[data-layout="grid"] .view-field__list,
+.view-field[data-layout="list"] .view-field__grid {
   display: none;
 }
 
@@ -897,8 +970,11 @@ a.menu__item:hover {
   background: linear-gradient(var(--blk50p), transparent 40%, transparent 50%, var(--blk50p));
 }
 
+/* List view: the controls sit in the middle of a small picture, so the shade covers all of
+   it, darker and slightly blurred. */
 .grid--list .card__media::before {
-  background: var(--blk50p);
+  background: color-mix(in srgb, var(--blk100p) 70%, transparent);
+  backdrop-filter: blur(2px);
 }
 
 .card__image {
@@ -1479,8 +1555,8 @@ a.menu__item:hover {
     padding-top: 0;
   }
 
-  /* The view switch is for desktop for now: on phones its row is mostly hidden. */
-  .view-toggle {
+  /* The view picker is for desktop for now: on phones its row is mostly hidden. */
+  .view-field {
     display: none;
   }
 

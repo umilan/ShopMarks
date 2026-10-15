@@ -227,23 +227,72 @@ export function removeProduct(id) {
   });
 }
 
-export function createList(name) {
+// parentId: the list this one goes under (a sub-list); none for a top-level list.
+export function createList(name, parentId = null) {
   return mutate(({ lists }) => {
     const now = Date.now();
     const created = { id: crypto.randomUUID(), name: name.trim(), createdAt: now, updatedAt: now };
+    if (parentId) created.parentId = parentId;
     lists.push(created);
     return created;
   });
 }
 
+// Lists form a tree through parentId. In tree order, each list followed by its sub-lists
+// (siblings keep the list order), with its depth; a missing parent, or a loop, makes a list
+// top-level. Sub-lists of a list in `collapsed` are left out.
+export function listTree(lists, collapsed = new Set()) {
+  const ids = new Set(lists.map((l) => l.id));
+  const parentOf = (list) => (list.parentId && ids.has(list.parentId) && list.parentId !== list.id ? list.parentId : null);
+  const children = new Map();
+  for (const list of lists) {
+    const parent = parentOf(list);
+    if (!children.has(parent)) children.set(parent, []);
+    children.get(parent).push(list);
+  }
+  const rows = [];
+  const seen = new Set();
+  // Every list is visited (so `seen` is complete); only those under open lists become rows.
+  const walk = (parent, depth, shown) => {
+    for (const list of children.get(parent) ?? []) {
+      if (seen.has(list.id)) continue;
+      seen.add(list.id);
+      const hasChildren = (children.get(list.id) ?? []).length > 0;
+      if (shown) rows.push({ list, depth, hasChildren });
+      walk(list.id, depth + 1, shown && !collapsed.has(list.id));
+    }
+  };
+  walk(null, 0, true);
+  // A loop (a under b under a) is never reached from the top: show those lists at the top.
+  for (const list of lists) if (!seen.has(list.id)) rows.push({ list, depth: 0, hasChildren: false });
+  return rows;
+}
+
+// A list's id with the ids of all its sub-lists, at any depth.
+export function branchOf(lists, id) {
+  const branch = new Set([id]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const list of lists) {
+      if (list.parentId && branch.has(list.parentId) && !branch.has(list.id)) {
+        branch.add(list.id);
+        grew = true;
+      }
+    }
+  }
+  return branch;
+}
+
 // The user's order (dragged in the sidebar): every list gets its place as `position`, and
 // counts as changed so the order syncs like any other edit.
-export function reorderLists(ids) {
+// moved / parentId: the dragged list also takes the level of the list it was dropped next to.
+export function reorderLists(ids, moved = null, parentId = null) {
   return mutate((data) => {
     const now = Date.now();
     for (const list of data.lists) {
       const position = ids.indexOf(list.id);
       if (position !== -1 && list.position !== position) Object.assign(list, { position, updatedAt: now });
+      if (list.id === moved && (list.parentId ?? null) !== parentId) Object.assign(list, { parentId, updatedAt: now });
     }
     data.lists.sort(byListOrder);
   });
@@ -256,10 +305,15 @@ export function renameList(id, name) {
   });
 }
 
-// Products in a deleted list are kept, in their other lists or unsorted.
+// Products in a deleted list are kept, in their other lists or unsorted. Its sub-lists move
+// up one level, under its own parent.
 export function deleteList(id) {
   return mutate((data) => {
     const now = Date.now();
+    const gone = data.lists.find((l) => l.id === id);
+    for (const list of data.lists) {
+      if (list.parentId === id) Object.assign(list, { parentId: gone?.parentId ?? null, updatedAt: now });
+    }
     data.lists = data.lists.filter((l) => l.id !== id);
     data.deleted.lists[id] = now;
     for (const product of data.products) {
@@ -284,7 +338,9 @@ export function importData(data) {
     const listIds = new Set(lists.map((l) => l.id));
     for (const incoming of Array.isArray(data.lists) ? data.lists : []) {
       if (typeof incoming?.id !== 'string' || typeof incoming.name !== 'string' || listIds.has(incoming.id)) continue;
-      lists.push({ id: incoming.id, name: incoming.name, createdAt: Number(incoming.createdAt) || now });
+      const list = { id: incoming.id, name: incoming.name, createdAt: Number(incoming.createdAt) || now };
+      if (typeof incoming.parentId === 'string') list.parentId = incoming.parentId;
+      lists.push(list);
       listIds.add(incoming.id);
     }
 

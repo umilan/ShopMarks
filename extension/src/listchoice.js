@@ -13,7 +13,7 @@
 //     </div>
 //   </details>
 
-import { NO_LIST_NAME, createList } from './store.js';
+import { NO_LIST_NAME, createList, listTree } from './store.js';
 
 // A details element stays open when you click elsewhere; the sheet closes on any press
 // outside it, so only one picker is open at a time.
@@ -32,11 +32,13 @@ export function fillListChoice(root, lists, selected, emptyLabel, { lastUsed = f
   else delete root.dataset.lastUsed;
   const options = root.querySelector('.list-choice__options');
   options.replaceChildren(
-    ...lists.map((list) => {
+    // In tree order, sub-lists indented under their list.
+    ...listTree(lists).map(({ list, depth }) => {
       const box = Object.assign(document.createElement('input'), { type: 'checkbox', value: list.id, checked: selected.includes(list.id) });
       box.dataset.name = list.name;
       const label = document.createElement('label');
       label.className = 'list-choice__option';
+      label.style.paddingLeft = `${8 + depth * 16}px`;
       label.append(box, list.name);
       return label;
     }),

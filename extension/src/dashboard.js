@@ -35,6 +35,8 @@ import {
   saveProduct,
   renameList,
   reorderLists,
+  listTree,
+  branchOf,
   setCurrency,
   toEuro,
   updateProduct,
@@ -63,6 +65,8 @@ const ICONS = {
   edit: svg('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
   delete: svg('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
   more: svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),
+  chevron: svg('<path d="m9 18 6-6-6-6"/>'),
+  subList: svg('<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'),
   note: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
   grip: svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>'),
 };
@@ -82,6 +86,25 @@ const WEB = Boolean(globalThis.shopMarksWeb);
 const TRASH = 'trash';
 // layout: 'grid' of cards or 'list' of rows; remembered per browser.
 const view = { listId: null, query: '', sort: 'newest', layout: savedLayout() };
+
+// Lists folded shut in the sidebar (their sub-lists hidden); remembered on this device only.
+const collapsedLists = new Set(
+  (() => {
+    try {
+      return JSON.parse(localStorage.getItem('collapsedLists')) ?? [];
+    } catch {
+      return [];
+    }
+  })(),
+);
+
+function setCollapsed(id, collapsed) {
+  if (collapsed) collapsedLists.add(id);
+  else collapsedLists.delete(id);
+  try {
+    localStorage.setItem('collapsedLists', JSON.stringify([...collapsedLists]));
+  } catch {}
+}
 
 // Long lists show the first BATCH items; the next batch is added when the end of the
 // grid comes near the screen. A new list, search or sort starts again from the first batch.
@@ -159,8 +182,8 @@ $('menu-toggle').addEventListener('click', () => {
   refreshDropbox();
 });
 $('theme-toggle').addEventListener('click', toggleTheme);
-$('view-toggle').addEventListener('click', () => {
-  view.layout = view.layout === 'list' ? 'grid' : 'list';
+$('view').addEventListener('change', (event) => {
+  view.layout = event.target.value;
   try {
     localStorage.setItem('layout', view.layout);
   } catch {}
@@ -220,16 +243,19 @@ stickyRows.observe(document.querySelector('.topbar'));
 stickyRows.observe(document.querySelector('.sidebar'));
 
 // On small screens the list picker moves up into the top bar and sorting goes to the top of
-// the settings menu.
+// the settings menu; + (add by link) is in the top bar there, and on wider screens in the
+// heading row after the grid / list switch.
 const narrow = matchMedia('(max-width: 800px)');
 const placeControls = () => {
   if (narrow.matches) {
     $('search-field').before($('list-picker'));
     $('menu').prepend($('sort-field'));
+    $('search-toggle').after($('add-item'));
   } else {
     $('lists').after($('list-picker'));
-    // Sort first, then the grid / list switch.
-    $('view-toggle').before($('sort-field'));
+    // Sort first, then the grid / list switch, then + (add by link).
+    $('view-field').before($('sort-field'));
+    $('view-field').after($('add-item'));
   }
 };
 narrow.addEventListener('change', placeControls);
@@ -339,14 +365,18 @@ function highlight(text = '') {
   return text.split(new RegExp(`(${escaped})`, 'i')).map((part, index) => (index % 2 ? el('mark', { textContent: part }) : part));
 }
 
+// Items in a list or any of its sub-lists, each counted once.
 function countIn(listId) {
-  return state.products.filter((p) => listsOf(p).includes(listId)).length;
+  const branch = branchOf(state.lists, listId);
+  return state.products.filter((p) => listsOf(p).some((id) => branch.has(id))).length;
 }
 
 function visibleProducts() {
   const query = view.query.trim().toLowerCase();
+  // A list shows its own items and those of its sub-lists.
+  const branch = view.listId && view.listId !== UNSORTED ? branchOf(state.lists, view.listId) : null;
   return state.products
-    .filter((p) => !view.listId || (view.listId === UNSORTED ? !listsOf(p).length : listsOf(p).includes(view.listId)))
+    .filter((p) => !view.listId || (view.listId === UNSORTED ? !listsOf(p).length : listsOf(p).some((id) => branch.has(id))))
     .filter((p) => !query || [p.title, p.store, p.note].some((text) => text?.toLowerCase().includes(query)))
     .sort(SORTS[view.sort]);
 }
@@ -359,14 +389,14 @@ function render() {
   $('lists').replaceChildren(
     listLink(null, 'All Items', state.products.length),
     listLink(UNSORTED, NO_LIST_NAME, unsortedCount),
-    ...state.lists.map((list) => listLink(list.id, list.name, countIn(list.id))),
+    ...listTree(state.lists, collapsedLists).map(({ list, depth, hasChildren }) => listLink(list.id, list.name, countIn(list.id), { depth, hasChildren })),
     trashLink(),
   );
   // Small screens pick the list from a dropdown instead of the row of tabs.
   $('list-picker').replaceChildren(
     new Option(`All Items (${state.products.length})`, ''),
     new Option(`${NO_LIST_NAME} (${unsortedCount})`, UNSORTED),
-    ...state.lists.map((list) => new Option(`${list.name} (${countIn(list.id)})`, list.id)),
+    ...listTree(state.lists).map(({ list, depth }) => new Option(`${'\u00a0\u00a0\u00a0'.repeat(depth)}${list.name} (${countIn(list.id)})`, list.id)),
     document.createElement('hr'),
     new Option('New list', NEW_LIST),
   );
@@ -397,8 +427,9 @@ function render() {
   $('grid').classList.toggle('grid--selecting', selected.size > 0);
   const list = view.layout === 'list';
   $('grid').classList.toggle('grid--list', list);
-  $('view-toggle').setAttribute('aria-pressed', String(list));
-  $('view-toggle').title = $('view-toggle').ariaLabel = list ? 'Grid view' : 'List view';
+  // The view picker shows the icon of the view in use.
+  $('view').value = view.layout;
+  $('view-field').dataset.layout = view.layout;
   if (before) rearrange(before);
   if (nearEnd()) showMore();
   $('empty').hidden = products.length > 0;
@@ -407,7 +438,9 @@ function render() {
     : 'Nothing saved yet. Open a product page in any online shop and click the ShopMarks icon in the toolbar.';
 }
 
-function listLink(id, name, count) {
+// depth: how far down the tree the list is; hasChildren: it has sub-lists, so it gets a
+// chevron that folds them away.
+function listLink(id, name, count, { depth = 0, hasChildren = false } = {}) {
   const link = el(
     'button',
     { className: 'list-link', type: 'button', onclick: () => setView({ listId: id }) },
@@ -437,6 +470,23 @@ function listLink(id, name, count) {
   }
   // A row: the link, and for the user's lists a ⋯ menu that shows on hover.
   const row = el('div', { className: 'list-row' }, link);
+  row.style.setProperty('--depth', depth);
+  if (hasChildren) {
+    const open = !collapsedLists.has(id);
+    const chevron = el('button', {
+      className: 'list-chevron',
+      type: 'button',
+      title: open ? 'Hide sub-lists' : 'Show sub-lists',
+      ariaLabel: `${open ? 'Hide' : 'Show'} the sub-lists of ${name}`,
+      innerHTML: ICONS.chevron,
+      onclick: () => {
+        setCollapsed(id, open);
+        render();
+      },
+    });
+    chevron.setAttribute('aria-expanded', String(open));
+    row.prepend(chevron);
+  }
   const list = state.lists.find((l) => l.id === id);
   if (list) {
     row.append(listMenu(list));
@@ -446,6 +496,13 @@ function listLink(id, name, count) {
 }
 
 // Your own lists can be dragged up or down the sidebar; a line shows where it will land.
+// Held over one list for NEST_DELAY, the line indents under it: dropped then, the dragged
+// list becomes that list's first sub-list.
+const NEST_DELAY = 2000;
+let draggedList = null; // dataTransfer cannot be read until the drop, so the id is kept here.
+let hoverRow = null;
+let hoverSince = 0;
+
 function makeListDraggable(row, id) {
   row.draggable = true;
   const clear = () => {
@@ -456,34 +513,55 @@ function makeListDraggable(row, id) {
     event.dataTransfer.setData(LIST_DRAG_TYPE, id);
     event.dataTransfer.effectAllowed = 'move';
     row.classList.add('list-row--dragging');
+    draggedList = id;
   });
   row.addEventListener('dragend', () => {
     row.classList.remove('list-row--dragging');
     clear();
+    draggedList = hoverRow = null;
   });
   row.addEventListener('dragover', (event) => {
     if (!event.dataTransfer.types.includes(LIST_DRAG_TYPE)) return;
+    // Never next to or into its own branch (itself or its sub-lists).
+    if (draggedList && branchOf(state.lists, draggedList).has(id)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    // dragover keeps firing while the pointer rests, so this measures how long it stays here.
+    if (hoverRow !== row) {
+      hoverRow = row;
+      hoverSince = Date.now();
+    }
     const box = row.getBoundingClientRect();
-    const place = event.clientY > box.top + box.height / 2 ? 'after' : 'before';
+    let place = event.clientY > box.top + box.height / 2 ? 'after' : 'before';
+    if (Date.now() - hoverSince >= NEST_DELAY) place = 'inside';
     if (row.dataset.drop === place) return;
     clear();
     row.dataset.drop = place;
   });
   row.addEventListener('dragleave', (event) => {
-    if (!row.contains(event.relatedTarget)) delete row.dataset.drop;
+    if (row.contains(event.relatedTarget)) return;
+    delete row.dataset.drop;
+    if (hoverRow === row) hoverRow = null;
   });
   row.addEventListener('drop', (event) => {
     const moved = event.dataTransfer.getData(LIST_DRAG_TYPE);
     if (!moved) return;
     event.preventDefault();
-    const after = row.dataset.drop === 'after';
+    const place = row.dataset.drop;
     clear();
-    if (moved === id) return;
-    const ids = state.lists.map((l) => l.id).filter((listId) => listId !== moved);
-    ids.splice(ids.indexOf(id) + (after ? 1 : 0), 0, moved);
-    reorderLists(ids);
+    hoverRow = null;
+    if (branchOf(state.lists, moved).has(id)) return;
+    const ids = listTree(state.lists).map(({ list }) => list.id).filter((listId) => listId !== moved);
+    if (place === 'inside') {
+      // First among its sub-lists; the list opens so the moved one shows.
+      ids.splice(ids.indexOf(id) + 1, 0, moved);
+      setCollapsed(id, false);
+      reorderLists(ids, moved, id);
+    } else {
+      // Next to a list: it moves to that list's level.
+      ids.splice(ids.indexOf(id) + (place === 'after' ? 1 : 0), 0, moved);
+      reorderLists(ids, moved, state.lists.find((l) => l.id === id)?.parentId ?? null);
+    }
   });
 }
 
@@ -503,6 +581,7 @@ function listMenu(list) {
   const sheet = el(
     'div',
     { className: 'menu__sheet', role: 'menu', hidden: true },
+    item('Add sub-list', ICONS.subList, () => addSubList(list), '', 'Create a list inside this one'),
     item('Rename', ICONS.edit, () => renameListDialog(list), '', 'Rename this list'),
     item('Remove', ICONS.delete, () => removeListDialog(list), 'menu__item--danger', 'Remove this list; its items move to Saved'),
   );
@@ -851,6 +930,15 @@ async function newList() {
   const name = await askName('New list');
   if (!name) return;
   const list = await createList(name);
+  view.listId = list.id;
+  refresh();
+}
+
+async function addSubList(parent) {
+  const name = await askName(`New list in “${parent.name}”`);
+  if (!name) return;
+  setCollapsed(parent.id, false); // Open the parent so the new list shows.
+  const list = await createList(name, parent.id);
   view.listId = list.id;
   refresh();
 }
