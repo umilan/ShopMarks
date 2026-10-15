@@ -31,10 +31,12 @@ export async function saveDropboxAppKey(key) {
   await chrome.storage.local.set({ [APP_KEY]: key.trim() });
 }
 
-// state is 'off' (not connected) or 'on'; lastSync is a timestamp.
+// state is 'off' (not connected) or 'on'; lastSync is a timestamp; failed is true when the
+// latest sync attempt failed (it clears on the next one that works).
 export async function dropboxStatus() {
   const { [KEY]: account } = await chrome.storage.local.get(KEY);
-  return account ? { state: 'on', name: account.name, lastSync: account.lastSync } : { state: 'off' };
+  if (!account) return { state: 'off' };
+  return { state: 'on', name: account.name, lastSync: account.lastSync, failed: (account.failedAt ?? 0) > (account.lastSync ?? 0) };
 }
 
 // Where Dropbox sends the user back after sign-in; it must be listed in the Dropbox app.
@@ -111,18 +113,28 @@ export function syncNow() {
   return navigator.locks.request(LOCK, async () => {
     const status = await dropboxStatus();
     if (status.state !== 'on') return false;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const remote = await download();
-      const merged = mergeData(await syncData(), remote?.data ?? {});
-      await applySyncData(merged);
-      if (remote && sameData(remote.data, merged)) break;
-      if (await upload(merged, remote?.rev)) break;
-      // Someone wrote the file since we read it: read again and merge their change too.
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const remote = await download();
+        const merged = mergeData(await syncData(), remote?.data ?? {});
+        await applySyncData(merged);
+        if (remote && sameData(remote.data, merged)) break;
+        if (await upload(merged, remote?.rev)) break;
+        // Someone wrote the file since we read it: read again and merge their change too.
+      }
+    } catch (error) {
+      // Remembered so the settings menu can say the last sync failed.
+      await markAccount({ failedAt: Date.now() });
+      throw error;
     }
-    const { [KEY]: account } = await chrome.storage.local.get(KEY);
-    if (account) await chrome.storage.local.set({ [KEY]: { ...account, lastSync: Date.now() } });
+    await markAccount({ lastSync: Date.now() });
     return true;
   });
+}
+
+async function markAccount(change) {
+  const { [KEY]: account } = await chrome.storage.local.get(KEY);
+  if (account) await chrome.storage.local.set({ [KEY]: { ...account, ...change } });
 }
 
 // Syncs a moment after the collection changes (a burst of changes becomes one sync).

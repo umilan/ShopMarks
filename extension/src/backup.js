@@ -10,6 +10,7 @@ export const BACKUP_FILE = 'saver-backup.json';
 const DB_NAME = 'saver-backup';
 const DB_STORE = 'handles';
 const FOLDER_KEY = 'folder';
+const SAVED_AT_KEY = 'savedAt';
 const LOCK = 'saver-backup-write';
 const READWRITE = { mode: 'readwrite' };
 
@@ -28,11 +29,14 @@ function handles(mode, run) {
 }
 
 // state is 'off' (no folder), 'on', or 'paused' (the browser wants the user to allow the folder again).
+// savedAt: when the file was last written. It is kept here, not in chrome.storage, because
+// every chrome.storage change starts a backup write.
 export async function backupStatus() {
   const folder = await handles('readonly', (store) => store.get(FOLDER_KEY));
   if (!folder) return { state: 'off' };
   const granted = (await folder.queryPermission(READWRITE)) === 'granted';
-  return { state: granted ? 'on' : 'paused', name: folder.name, folder };
+  const savedAt = await handles('readonly', (store) => store.get(SAVED_AT_KEY));
+  return { state: granted ? 'on' : 'paused', name: folder.name, folder, savedAt };
 }
 
 // Opens the folder picker and remembers the choice. Returns the backup already
@@ -50,7 +54,8 @@ export async function chooseFolder() {
   return existing;
 }
 
-export function forgetFolder() {
+export async function forgetFolder() {
+  await handles('readwrite', (store) => store.delete(SAVED_AT_KEY));
   return handles('readwrite', (store) => store.delete(FOLDER_KEY));
 }
 
@@ -64,6 +69,7 @@ export function writeBackup() {
     const writable = await file.createWritable();
     await writable.write(JSON.stringify(await exportData(), null, 2));
     await writable.close();
+    await handles('readwrite', (store) => store.put(Date.now(), SAVED_AT_KEY));
     return true;
   });
 }

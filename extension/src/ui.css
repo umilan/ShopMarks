@@ -52,6 +52,8 @@
   --color-danger: light-dark(#b3261e, #f2867d);
   --color-danger-soft: light-dark(#fbe9e7, #3d1f1c);
   --color-danger-soft-active: light-dark(#f6d5d1, #4f2824);
+  /* Needs attention but nothing is lost (a paused backup). */
+  --color-warning: light-dark(#b26a00, #f0b429);
   /* Filled danger button (the confirm in a delete dialog): one red in both themes, white text. */
   --color-danger-solid: #b3261e;
   --color-danger-solid-hover: color-mix(in srgb, #b3261e, #000 10%);

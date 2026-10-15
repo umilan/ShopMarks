@@ -209,6 +209,95 @@ body {
   flex: none;
 }
 
+/* The whole row takes the hover fill, ⋯ included, as list rows in the sidebar do; on that
+   fill the ⋯ hovers one step darker. */
+.menu__split {
+  border-radius: var(--radius);
+}
+
+.menu__split:hover,
+.menu__split:has(.menu__more-toggle[aria-expanded="true"]) {
+  background: var(--color-surface-hover);
+}
+
+.menu__split > .menu__item:hover {
+  background: transparent;
+}
+
+.menu__split .menu__more-toggle:hover {
+  background: var(--color-surface-active);
+}
+
+/* Backup folder and Dropbox sync: name with a status line under it. */
+.menu__item--status {
+  min-height: 52px;
+}
+
+.menu__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.menu__sub {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A dot on the icon: green on, amber paused, red failed, pulsing while busy; none when off. */
+.menu__status-icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.menu__status-icon::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  display: none;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+}
+
+.menu__status-icon[data-state="on"]::after,
+.menu__status-icon[data-state="busy"]::after {
+  display: block;
+  background: var(--color-primary);
+}
+
+.menu__status-icon[data-state="warn"]::after {
+  display: block;
+  background: var(--color-warning);
+}
+
+.menu__status-icon[data-state="error"]::after {
+  display: block;
+  background: var(--color-danger);
+}
+
+.menu__status-icon[data-state="busy"]::after {
+  animation: status-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes status-pulse {
+  to {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__status-icon[data-state="busy"]::after {
+    animation: none;
+  }
+}
+
 .menu__more-toggle {
   width: 32px;
   height: 32px;
@@ -625,7 +714,8 @@ a.menu__item:hover {
 .grid--list .card {
   flex-direction: row;
   align-items: center;
-  height: 64px;
+  /* Room for a two-line title over the shop name. */
+  height: 80px;
   border-radius: var(--radius);
   /* Visible, so the row's ⋯ menu can open past its edge. */
   overflow: visible;
@@ -635,7 +725,7 @@ a.menu__item:hover {
 .grid--list .card__media {
   flex: none;
   align-self: stretch;
-  width: 62px;
+  width: 80px;
   overflow: hidden;
   border-right: var(--border);
   border-bottom: 0;
@@ -665,11 +755,15 @@ a.menu__item:hover {
    step aside (display: contents) so their parts take these columns directly. */
 .grid--list .card {
   display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) auto auto;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 80px minmax(0, 1fr) auto auto;
+  /* Title and shop sit together in the middle, however many lines the title takes; the
+     flexible rows around them keep the picture, price and menu the full row height. */
+  grid-template-rows: 1fr auto auto 1fr;
   grid-template-areas:
+    "media . price menu"
     "media title price menu"
-    "media store price menu";
+    "media store price menu"
+    "media . price menu";
   column-gap: 16px;
   row-gap: 2px;
 }
@@ -683,14 +777,18 @@ a.menu__item:hover {
   display: contents;
 }
 
+/* Up to two lines, then "…". */
 .grid--list .card__title {
   grid-area: title;
-  align-self: end;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .grid--list .card__store {
   grid-area: store;
-  align-self: start;
   margin-right: 0;
 }
 
@@ -915,6 +1013,20 @@ a.menu__item:hover {
 }
 
 /* One-line stripe along the bottom edge of the image. */
+/* A speech bubble before the note's text, in line with it (the line still ends in "…"). */
+.card__note-icon svg {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+/* The bubble and "note: " before the text: a label, a little quieter than the note itself. */
+.card__note-icon,
+.card__note-prefix {
+  opacity: 0.7;
+}
+
 .card__note {
   position: absolute;
   /* Over the shade (1), under the corner controls (2). */
@@ -999,6 +1111,16 @@ a.menu__item:hover {
 
 /* White when ticked, with a black tick (the browser picks the tick colour to contrast
    with accent-color); it sits on pictures, so it does not change with the theme. */
+/* List view: the grip and checkbox centred on the small picture instead of in its corner. */
+.grid--list .card__corner {
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 100%;
+  justify-content: center;
+  gap: 4px;
+}
+
 .card__select {
   width: 20px;
   height: 20px;

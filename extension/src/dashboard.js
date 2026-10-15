@@ -50,6 +50,9 @@ const SORTS = {
   'price-desc': (a, b) => (euros(b) ?? -Infinity) - (euros(a) ?? -Infinity) || 0,
   drop: (a, b) => (priceChange(a)?.percent ?? 0) - (priceChange(b)?.percent ?? 0),
   store: (a, b) => a.store.localeCompare(b.store),
+  'store-desc': (a, b) => b.store.localeCompare(a.store),
+  title: (a, b) => a.title.localeCompare(b.title),
+  'title-desc': (a, b) => b.title.localeCompare(a.title),
 };
 
 const svg = (paths) =>
@@ -58,6 +61,7 @@ const ICONS = {
   edit: svg('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
   delete: svg('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
   more: svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),
+  note: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
   grip: svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>'),
 };
 // Cards ticked with their checkbox; dragging one of them moves them all.
@@ -119,7 +123,7 @@ $('rename-list').addEventListener('click', renameCurrentList);
 $('delete-list').addEventListener('click', deleteCurrentList);
 $('check-prices').addEventListener('click', checkPrices);
 $('add-item').addEventListener('click', addByLink);
-$('dropbox-connect').addEventListener('click', () => connectToDropbox());
+$('dropbox-main').addEventListener('click', dropboxMain);
 $('help-open').addEventListener('click', () => $('help-dialog').showModal());
 $('dropbox-manage').addEventListener('click', () => connectToDropbox(true));
 $('dropbox-clear').addEventListener('click', clearDropboxSetup);
@@ -142,10 +146,14 @@ $('add-dialog').querySelector('form').addEventListener('submit', (event) => {
 $('export').addEventListener('click', exportToFile);
 $('import').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importFromFile);
-$('backup-choose').addEventListener('click', chooseBackupFolder);
-$('backup-resume').addEventListener('click', resumeBackup);
-$('backup-manage').addEventListener('click', chooseBackupFolder);
-$('backup-clear').addEventListener('click', stopBackup);
+$('backup-main').addEventListener('click', backupMain);
+$('backup-change').addEventListener('click', chooseBackupFolder);
+$('backup-stop').addEventListener('click', stopBackup);
+// Opening the settings menu brings the backup and sync rows up to date ("2 min ago").
+$('menu-toggle').addEventListener('click', () => {
+  if (!$('backup-menu').hidden) refreshBackup();
+  refreshDropbox();
+});
 $('theme-toggle').addEventListener('click', toggleTheme);
 $('view-toggle').addEventListener('click', () => {
   view.layout = view.layout === 'list' ? 'grid' : 'list';
@@ -180,7 +188,7 @@ document.addEventListener('click', (event) => {
   for (const menu of document.querySelectorAll('.menu')) {
     if (menu === toggled) setMenu(menu, menu.querySelector(':scope > .menu__sheet').hidden);
     else if (toggled && menu.contains(toggled)) continue;
-    else if (!menu.contains(event.target) || event.target.closest('.menu__item')) setMenu(menu, false);
+    else if (!menu.contains(event.target) || event.target.closest('.menu__item:not(.menu__item--stay)')) setMenu(menu, false);
   }
 });
 // Without hover (touch screens) a tap opens a note; a tap anywhere else closes it.
@@ -535,7 +543,7 @@ function card(product) {
         iconButton('Delete', ICONS.delete, () => confirmDelete(product), 'button--danger', 'Delete this item'),
       ),
       el('div', { className: 'card__corner' }, el('span', { className: 'card__grip', title: 'Drag to a list', innerHTML: ICONS.grip }), selectBox(product)),
-      product.note && el('p', { className: 'card__note' }, ...highlight(product.note)),
+      product.note && el('p', { className: 'card__note' }, el('span', { className: 'card__note-icon', innerHTML: ICONS.note }), el('span', { className: 'card__note-prefix', textContent: 'note: ' }), ...highlight(product.note)),
     ),
     cardMenu(product),
     el(
@@ -931,13 +939,49 @@ async function importFromFile(event) {
 
 // Backup folder
 
+// The backup and Dropbox rows in the settings menu: a status dot on the icon (off, on, warn,
+// error, busy) and a line under the name saying what is going on.
+function setStatus(prefix, state, text, tip) {
+  $(`${prefix}-icon`).dataset.state = state;
+  $(`${prefix}-sub`).textContent = text;
+  $(`${prefix}-main`).title = tip;
+}
+
+// "just now", "5 min ago", "at 14:20" (today), "on 12 Oct" (earlier).
+function ago(time) {
+  const minutes = Math.round((Date.now() - time) / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const date = new Date(time);
+  if (date.toDateString() === new Date().toDateString()) return `at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return `on ${date.toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
+}
+
 async function refreshBackup() {
   backup = await backupStatus();
-  $('backup-status').hidden = backup.state === 'off';
-  $('backup-status').textContent = backup.state === 'on' ? `Backing up to “${backup.name}”` : `Backup to “${backup.name}” is paused`;
-  $('backup-resume').hidden = backup.state !== 'paused';
-  // The ⋯ (Manage, Reset to default) beside Backup folder once a folder is set.
-  $('backup-more').hidden = backup.state === 'off';
+  const { state, name, savedAt } = backup;
+  if (state === 'off') setStatus('backup', 'off', 'Off · click to choose a folder', 'Choose a folder to keep a JSON copy of everything');
+  else if (state === 'paused') setStatus('backup', 'warn', `${name} · paused, click to allow again`, 'Allow ShopMarks to write to the folder again');
+  else setStatus('backup', 'on', `${name} · ${savedAt ? `saved ${ago(savedAt)}` : 'not saved yet'}`, 'Save the backup now');
+  $('backup-more').hidden = state === 'off';
+}
+
+// The row's own click does what is most likely wanted: choose a folder, allow it again, or save now.
+function backupMain() {
+  // No await before these: the folder picker and the permission prompt need this click.
+  if (backup.state === 'off') return chooseBackupFolder();
+  if (backup.state === 'paused') return resumeBackup();
+  return backupNow();
+}
+
+async function backupNow() {
+  setStatus('backup', 'busy', 'Saving…', 'Saving the backup');
+  try {
+    await writeBackup();
+  } catch {
+    toast('ShopMarks could not write to that folder.');
+  }
+  await refreshBackup();
 }
 
 async function chooseBackupFolder() {
@@ -1075,33 +1119,43 @@ async function readPage(url) {
 
 // Dropbox sync
 
+let dropboxBusy = false;
+
 async function refreshDropbox() {
-  const status = await dropboxStatus();
+  const [status, key] = await Promise.all([dropboxStatus(), dropboxAppKey()]);
   const on = status.state === 'on';
-  $('dropbox-status').hidden = !on;
-  if (on) {
-    const when = status.lastSync ? new Date(status.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'not yet';
-    $('dropbox-status').textContent = `Syncing with ${status.name}'s Dropbox · last ${when}`;
-  }
-  $('dropbox-connect-row').hidden = on;
-  // The ⋯ (Manage, Reset to default) beside Sync with Dropbox once there is a setup.
-  $('dropbox-more').hidden = !(await dropboxAppKey());
+  if (dropboxBusy) setStatus('dropbox', 'busy', 'Syncing…', 'Syncing with Dropbox');
+  else if (!on) {
+    setStatus('dropbox', 'off', key ? 'Not connected · click to connect' : 'Off · click to set up', 'Connect Dropbox to keep items in sync across devices');
+  } else if (status.failed) setStatus('dropbox', 'error', 'Last sync failed · click to retry', 'Try syncing with Dropbox again');
+  else setStatus('dropbox', 'on', `${status.name} · ${status.lastSync ? `synced ${ago(status.lastSync)}` : 'not synced yet'}`, 'Sync with Dropbox now');
+  // The ⋯ once there is a setup; Sync now and Stop sync only while connected.
+  $('dropbox-more').hidden = !on && !key;
   $('dropbox-sync').hidden = !on;
   $('dropbox-disconnect').hidden = !on;
 }
 
+// The row's own click: sync now when connected, otherwise connect (setting up first if needed).
+async function dropboxMain() {
+  if ((await dropboxStatus()).state === 'on') runSync(true);
+  else connectToDropbox();
+}
+
 async function runSync(announce) {
+  dropboxBusy = true;
+  await refreshDropbox();
   try {
     const synced = await syncNow();
     if (synced && announce) toast('Synced with Dropbox.');
   } catch (error) {
     console.error(error);
     if (announce) toast('Dropbox sync failed. Check the connection and try again.');
+  } finally {
+    dropboxBusy = false;
   }
   await refreshDropbox();
 }
 
-// Asks for the app key the first time only; it is then kept on this device.
 // Asks for the app key the first time; `again` shows the setup steps once more, with the
 // saved key filled in (after a sign-in that did not finish).
 async function askDropboxAppKey(again = false) {
