@@ -236,6 +236,19 @@ export function createList(name) {
   });
 }
 
+// The user's order (dragged in the sidebar): every list gets its place as `position`, and
+// counts as changed so the order syncs like any other edit.
+export function reorderLists(ids) {
+  return mutate((data) => {
+    const now = Date.now();
+    for (const list of data.lists) {
+      const position = ids.indexOf(list.id);
+      if (position !== -1 && list.position !== position) Object.assign(list, { position, updatedAt: now });
+    }
+    data.lists.sort(byListOrder);
+  });
+}
+
 export function renameList(id, name) {
   return mutate(({ lists }) => {
     const target = lists.find((l) => l.id === id);
@@ -326,7 +339,9 @@ function mergeMarkers(a = {}, b = {}) {
 
 // The same order on every device, so equal data serialises identically.
 const byNewest = (x, y) => y.createdAt - x.createdAt || (x.id < y.id ? -1 : 1);
-const byOldest = (x, y) => x.createdAt - y.createdAt || (x.id < y.id ? -1 : 1);
+// Lists: in the order the user dragged them into; lists never moved (no position) come after,
+// oldest first (a position is a small number, a creation time a large one).
+const byListOrder = (x, y) => (x.position ?? x.createdAt) - (y.position ?? y.createdAt) || x.createdAt - y.createdAt || (x.id < y.id ? -1 : 1);
 
 export function mergeData(a = {}, b = {}) {
   const deleted = {
@@ -339,7 +354,7 @@ export function mergeData(a = {}, b = {}) {
     return { ...rest, listIds };
   });
   return {
-    lists: mergeRecords(a.lists, b.lists, deleted.lists).sort(byOldest),
+    lists: mergeRecords(a.lists, b.lists, deleted.lists).sort(byListOrder),
     products: products.sort(byNewest),
     deleted,
   };

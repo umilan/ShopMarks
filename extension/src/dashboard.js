@@ -34,6 +34,7 @@ import {
   removeProduct,
   saveProduct,
   renameList,
+  reorderLists,
   setCurrency,
   toEuro,
   updateProduct,
@@ -73,6 +74,8 @@ let animateGridUntil = 0;
 // listId null means "all items"; UNSORTED shows the items in no list.
 const UNSORTED = 'unsorted';
 const DRAG_TYPE = 'application/x-shopmarks-item';
+// A list dragged in the sidebar to reorder it (cards use DRAG_TYPE).
+const LIST_DRAG_TYPE = 'application/x-shopmarks-list';
 // Running as the web app (PWA, see web.js) rather than inside the extension.
 const WEB = Boolean(globalThis.shopMarksWeb);
 // A drop target shown only while a card is dragged: deletes for good, after asking.
@@ -435,8 +438,53 @@ function listLink(id, name, count) {
   // A row: the link, and for the user's lists a ⋯ menu that shows on hover.
   const row = el('div', { className: 'list-row' }, link);
   const list = state.lists.find((l) => l.id === id);
-  if (list) row.append(listMenu(list));
+  if (list) {
+    row.append(listMenu(list));
+    makeListDraggable(row, list.id);
+  }
   return row;
+}
+
+// Your own lists can be dragged up or down the sidebar; a line shows where it will land.
+function makeListDraggable(row, id) {
+  row.draggable = true;
+  const clear = () => {
+    for (const marked of document.querySelectorAll('.list-row[data-drop]')) delete marked.dataset.drop;
+  };
+  row.addEventListener('dragstart', (event) => {
+    if (event.target !== row) return;
+    event.dataTransfer.setData(LIST_DRAG_TYPE, id);
+    event.dataTransfer.effectAllowed = 'move';
+    row.classList.add('list-row--dragging');
+  });
+  row.addEventListener('dragend', () => {
+    row.classList.remove('list-row--dragging');
+    clear();
+  });
+  row.addEventListener('dragover', (event) => {
+    if (!event.dataTransfer.types.includes(LIST_DRAG_TYPE)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const box = row.getBoundingClientRect();
+    const place = event.clientY > box.top + box.height / 2 ? 'after' : 'before';
+    if (row.dataset.drop === place) return;
+    clear();
+    row.dataset.drop = place;
+  });
+  row.addEventListener('dragleave', (event) => {
+    if (!row.contains(event.relatedTarget)) delete row.dataset.drop;
+  });
+  row.addEventListener('drop', (event) => {
+    const moved = event.dataTransfer.getData(LIST_DRAG_TYPE);
+    if (!moved) return;
+    event.preventDefault();
+    const after = row.dataset.drop === 'after';
+    clear();
+    if (moved === id) return;
+    const ids = state.lists.map((l) => l.id).filter((listId) => listId !== moved);
+    ids.splice(ids.indexOf(id) + (after ? 1 : 0), 0, moved);
+    reorderLists(ids);
+  });
 }
 
 // The ⋯ menu of one list: rename it, or remove it (its items move to Saved).

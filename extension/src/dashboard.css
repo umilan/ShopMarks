@@ -437,6 +437,30 @@ a.menu__item:hover {
   border-radius: var(--radius);
 }
 
+/* Reordering lists: the dragged row fades; a straight white line (not following the row's
+   rounded corners) shows where it will land, in the gap above or below the row. */
+.list-row--dragging {
+  opacity: 0.4;
+}
+
+.list-row[data-drop]::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--wht100p);
+  pointer-events: none;
+}
+
+.list-row[data-drop="before"]::before {
+  top: -1px;
+}
+
+.list-row[data-drop="after"]::before {
+  bottom: -1px;
+}
+
 /* The row with an open menu sits above the rows after it, so its sheet covers them. */
 .list-row:has([aria-expanded="true"]) {
   z-index: 3;
@@ -472,7 +496,7 @@ a.menu__item:hover {
   width: 32px;
   height: 32px;
   padding: 0;
-  color: var(--acc100p);
+  color: var(--color-text);
   background: var(--acc10p);
 }
 
