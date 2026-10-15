@@ -12,8 +12,23 @@ body {
   background: linear-gradient(var(--color-raised) 0 0) var(--color-surface);
 }
 
-.popup-header__name {
+/* The logo and name open the dashboard; the link takes the free space so Save stays right. */
+.popup-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-right: auto;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.popup-brand:focus-visible {
+  outline: 2px solid var(--color-primary, currentColor);
+  outline-offset: 2px;
+}
+
+.popup-header__name {
   font-size: 16px;
 }
 
