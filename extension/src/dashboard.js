@@ -30,6 +30,7 @@ import {
   onChange,
   priceChange,
   priceSpots,
+  normalizeUrl,
   titleSpotFor,
   removeProduct,
   saveProduct,
@@ -131,9 +132,12 @@ new IntersectionObserver((entries) => {
   if (entries.some((entry) => entry.isIntersecting)) showMore();
 }, { rootMargin: `0px 0px ${NEAR_END}px` }).observe($('grid-more'));
 
+// The views, in the order of their shortcuts: Cmd+1, Cmd+2, Cmd+3 (Ctrl on Windows).
+const LAYOUTS = ['list', 'grid', 'compact'];
+
 function savedLayout() {
   try {
-    return localStorage.getItem('layout') === 'list' ? 'list' : 'grid';
+    return LAYOUTS.find((layout) => layout === localStorage.getItem('layout')) ?? 'grid';
   } catch {
     return 'grid';
   }
@@ -182,12 +186,42 @@ $('menu-toggle').addEventListener('click', () => {
   refreshDropbox();
 });
 $('theme-toggle').addEventListener('click', toggleTheme);
-$('view').addEventListener('change', (event) => {
-  view.layout = event.target.value;
+
+// A dropdown opened with the mouse stays focused after its list closes, and Chrome then draws
+// the keyboard focus ring on it. It is marked while used by pointer (ui.css hides the ring);
+// a key press on it, or focus leaving it, brings normal focus rings back.
+document.addEventListener('pointerdown', (event) => {
+  const select = event.target.closest?.('select');
+  if (select) select.dataset.pointer = '';
+}, true);
+for (const type of ['keydown', 'focusout']) {
+  document.addEventListener(type, (event) => {
+    if (event.target instanceof HTMLSelectElement) delete event.target.dataset.pointer;
+  }, true);
+}
+
+// The lists sidebar can be hidden (desktop); remembered on this device.
+function setSidebarHidden(hidden) {
+  document.querySelector('.layout').classList.toggle('layout--no-sidebar', hidden);
+  const toggle = $('sidebar-toggle');
+  toggle.setAttribute('aria-expanded', String(!hidden));
+  toggle.title = toggle.ariaLabel = hidden ? 'Show lists' : 'Hide lists';
   try {
-    localStorage.setItem('layout', view.layout);
+    localStorage.setItem('sidebarHidden', hidden ? '1' : '');
+  } catch {}
+  placeControls();
+}
+$('sidebar-toggle').addEventListener('click', () => setSidebarHidden($('sidebar-toggle').getAttribute('aria-expanded') === 'true'));
+function setLayout(layout) {
+  view.layout = layout;
+  try {
+    localStorage.setItem('layout', layout);
   } catch {}
   render();
+}
+$('view-sheet').addEventListener('click', (event) => {
+  const option = event.target.closest('.view-option');
+  if (option) setLayout(option.dataset.layout);
 });
 $('delete-selected').addEventListener('click', () => deleteItems([...selected]));
 $('select-toggle').addEventListener('click', () => {
@@ -238,9 +272,13 @@ document.addEventListener('keydown', (event) => {
 const stickyRows = new ResizeObserver(() => {
   document.body.style.setProperty('--topbar-height', `${document.querySelector('.topbar').offsetHeight}px`);
   document.body.style.setProperty('--sidebar-height', `${document.querySelector('.sidebar').offsetHeight}px`);
+  // Where the stuck rows end, so a card scrolled to with the keyboard is not hidden under them.
+  const head = document.querySelector('.main-head');
+  document.body.style.setProperty('--sticky-bottom', `${(parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight}px`);
 });
 stickyRows.observe(document.querySelector('.topbar'));
 stickyRows.observe(document.querySelector('.sidebar'));
+stickyRows.observe(document.querySelector('.main-head'));
 
 // On small screens the list picker moves up into the top bar and sorting goes to the top of
 // the settings menu; + (add by link) is in the top bar there, and on wider screens in the
@@ -251,6 +289,9 @@ const placeControls = () => {
     $('search-field').before($('list-picker'));
     $('menu').prepend($('sort-field'));
     $('search-toggle').after($('add-item'));
+  } else if (document.querySelector('.layout--no-sidebar')) {
+    // Lists hidden: the list dropdown stands in for the heading's title.
+    $('list-title').after($('list-picker'));
   } else {
     $('lists').after($('list-picker'));
     // Sort first, then the grid / list switch, then + (add by link).
@@ -260,13 +301,54 @@ const placeControls = () => {
 };
 narrow.addEventListener('change', placeControls);
 placeControls();
+// The sidebar as it was left on this device (after placeControls exists: it places the list dropdown).
+try {
+  setSidebarHidden(localStorage.getItem('sidebarHidden') === '1');
+} catch {}
+
+// Cmd+K (Ctrl+K on Windows) jumps to search from anywhere; the field shows the keys.
+const MOD_KEY = /mac|iphone|ipad/i.test(navigator.userAgentData?.platform ?? navigator.platform) ? '⌘' : 'Ctrl';
+for (const key of document.querySelectorAll('.mod-key')) key.textContent = MOD_KEY;
+// Cmd+1, 2, 3 switch the view (list, grid, compact grid), as the view menu shows.
+document.addEventListener('keydown', (event) => {
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return;
+  const layout = LAYOUTS[Number(event.key) - 1];
+  if (!layout || document.querySelector('dialog[open]')) return;
+  event.preventDefault();
+  setLayout(layout);
+});
+
+// Where the focus was before Cmd+K, for Escape to go back to.
+let beforeSearch = null;
+document.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return;
+  if (document.querySelector('dialog[open]')) return;
+  event.preventDefault();
+  if (document.activeElement !== $('search')) beforeSearch = document.activeElement;
+  if (narrow.matches) setSearch(true);
+  $('search').focus();
+  $('search').select();
+});
 
 // On small screens search is an icon that opens the field in place of the pickers.
 $('search-toggle').addEventListener('click', () => setSearch($('search-toggle').getAttribute('aria-expanded') !== 'true'));
+// Escape leaves search: on small screens it closes the field; on wider ones the text stays
+// (the browser would clear it) and the focus goes back to where it was before Cmd+K.
 $('search').addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || !narrow.matches) return;
-  setSearch(false);
-  $('search-toggle').focus();
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  if (narrow.matches) {
+    setSearch(false);
+    $('search-toggle').focus();
+    return;
+  }
+  // Searching redraws the sidebar, so a list is found again by its id.
+  let back = beforeSearch;
+  if (back && !back.isConnected && back.dataset?.nav !== undefined) back = navLink(back.dataset.nav);
+  if (!back?.isConnected || back === document.body) back = null;
+  beforeSearch = null;
+  if (back) back.focus();
+  else $('search').blur();
 });
 
 const NEW_LIST = 'new-list';
@@ -386,12 +468,28 @@ function render() {
   const currentList = state.lists.find((list) => list.id === view.listId);
   const unsortedCount = state.products.filter((p) => !listsOf(p).length).length;
 
+  // Rebuilding the rows drops the focus; it goes back to the same list (or its chevron), so
+  // the keyboard and a click carry on from there.
+  const focused = document.activeElement?.closest?.('#lists .list-row');
+  const refocus = focused && {
+    nav: focused.querySelector('.list-link').dataset.nav,
+    chevron: document.activeElement.classList.contains('list-chevron'),
+  };
   $('lists').replaceChildren(
     listLink(null, 'All Items', state.products.length),
     listLink(UNSORTED, NO_LIST_NAME, unsortedCount),
     ...listTree(state.lists, collapsedLists).map(({ list, depth, hasChildren }) => listLink(list.id, list.name, countIn(list.id), { depth, hasChildren })),
     trashLink(),
   );
+  // One tab stop for the whole tree, on the open list; arrows move from there.
+  const links = navLinks();
+  for (const link of links) link.tabIndex = -1;
+  (links.find((link) => link.getAttribute('aria-current') === 'true') ?? links[0]).tabIndex = 0;
+  if (refocus) {
+    const row = navLink(refocus.nav)?.closest('.list-row');
+    const chevron = refocus.chevron && row?.querySelector('.list-chevron');
+    (chevron || row?.querySelector('.list-link'))?.focus();
+  }
   // Small screens pick the list from a dropdown instead of the row of tabs.
   $('list-picker').replaceChildren(
     new Option(`All Items (${state.products.length})`, ''),
@@ -422,14 +520,21 @@ function render() {
     shownKey = key;
     shownCount = BATCH;
   }
+  const cardFocused = document.activeElement?.matches?.('#grid > .card');
   $('grid').replaceChildren(...products.slice(0, shownCount).map(card));
+  // One tab stop for the cards, on the last one used; the focus stays on it across redraws.
+  const cards = [...$('grid').children];
+  for (const c of cards) c.tabIndex = -1;
+  const current = cards.find((c) => c.dataset.id === currentCardId) ?? cards[0];
+  if (current) current.tabIndex = 0;
+  if (cardFocused && current) current.focus({ preventScroll: true });
   // Once any card is ticked, every card shows its checkbox and grip.
   $('grid').classList.toggle('grid--selecting', selected.size > 0);
-  const list = view.layout === 'list';
-  $('grid').classList.toggle('grid--list', list);
-  // The view picker shows the icon of the view in use.
-  $('view').value = view.layout;
+  $('grid').classList.toggle('grid--list', view.layout === 'list');
+  $('grid').classList.toggle('grid--compact', view.layout === 'compact');
+  // The view picker shows the icon of the view in use, and its menu ticks it.
   $('view-field').dataset.layout = view.layout;
+  for (const option of document.querySelectorAll('.view-option')) option.setAttribute('aria-checked', String(option.dataset.layout === view.layout));
   if (before) rearrange(before);
   if (nearEnd()) showMore();
   $('empty').hidden = products.length > 0;
@@ -448,6 +553,7 @@ function listLink(id, name, count, { depth = 0, hasChildren = false } = {}) {
     el('span', { className: 'list-link__count', textContent: count }),
   );
   link.setAttribute('aria-current', String(view.listId === id));
+  link.dataset.nav = id ?? '';
   // Lists and Unsorted take dropped cards; All Items is not a place to move to.
   if (id !== null) {
     link.dataset.listId = id;
@@ -494,6 +600,163 @@ function listLink(id, name, count, { depth = 0, hasChildren = false } = {}) {
   }
   return row;
 }
+
+// The sidebar's lists as a tree for the keyboard: up and down open the list above or below,
+// right unfolds a list's sub-lists or steps into them, left folds them or steps out to the
+// parent list, Home and End go to the first and last.
+function navLinks() {
+  return [...$('lists').querySelectorAll('.list-link:not(.list-link--trash)')];
+}
+
+function navLink(nav) {
+  return navLinks().find((link) => link.dataset.nav === nav);
+}
+
+$('lists').addEventListener('keydown', (event) => {
+  const link = event.target.closest('.list-link');
+  if (link) listKey(link, event);
+});
+
+function listKey(link, event) {
+  if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
+  const links = navLinks();
+  const index = links.indexOf(link);
+  if (index < 0) return;
+  const id = link.dataset.nav || null;
+  const folds = Boolean(link.closest('.list-row').querySelector('.list-chevron'));
+  const open = folds && !collapsedLists.has(id);
+  let target = null;
+  switch (event.key) {
+    case 'ArrowDown':
+      target = links[index + 1];
+      break;
+    case 'ArrowUp':
+      target = links[index - 1];
+      break;
+    case 'Home':
+      target = links[0];
+      break;
+    case 'End':
+      target = links.at(-1);
+      break;
+    case 'ArrowRight':
+      if (folds && !open) {
+        event.preventDefault();
+        setCollapsed(id, false);
+        return render();
+      }
+      if (open) target = links[index + 1];
+      break;
+    case 'ArrowLeft':
+      if (open) {
+        event.preventDefault();
+        setCollapsed(id, true);
+        return render();
+      }
+      target = navLink(state.lists.find((list) => list.id === id)?.parentId ?? '\0');
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+  if (!target) return;
+  target.focus();
+  setView({ listId: target.dataset.nav || null });
+}
+
+// The cards for the keyboard: arrows move between them (up and down by row in the grid),
+// Enter opens the shop page, Space ticks the card.
+function cardKey(article, event) {
+  if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
+  const cards = [...$('grid').querySelectorAll(':scope > .card')];
+  const index = cards.indexOf(article);
+  let target = null;
+  switch (event.key) {
+    case 'ArrowRight':
+      target = cards[index + 1];
+      break;
+    case 'ArrowLeft':
+      target = cards[index - 1];
+      break;
+    case 'ArrowDown':
+    case 'ArrowUp': {
+      // A row is the cards that share a top edge; a column is found by left edge.
+      const columns = Math.max(1, cards.filter((c) => c.offsetTop === cards[0].offsetTop).length);
+      target = cards[index + (event.key === 'ArrowDown' ? columns : -columns)];
+      if (!target && event.key === 'ArrowDown' && Math.floor(index / columns) < Math.floor((cards.length - 1) / columns)) target = cards.at(-1);
+      break;
+    }
+    case 'Home':
+      target = cards[0];
+      break;
+    case 'End':
+      target = cards.at(-1);
+      break;
+    case 'Enter':
+      event.preventDefault();
+      return article.querySelector('.card__title a').click();
+    case ' ':
+      event.preventDefault();
+      return article.querySelector('.card__select').click();
+    default:
+      return;
+  }
+  event.preventDefault();
+  if (target) focusCard(target);
+}
+
+let currentCardId = null;
+
+function focusCard(article) {
+  for (const other of $('grid').querySelectorAll(':scope > .card[tabindex="0"]')) other.tabIndex = -1;
+  article.tabIndex = 0;
+  currentCardId = article.dataset.id;
+  article.focus({ preventScroll: true });
+  // Whole, with a gap: below the stuck rows going up, above the window's edge going down.
+  article.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+$('grid').addEventListener('keydown', (event) => {
+  if (event.target.matches('.card')) cardKey(event.target, event);
+});
+$('grid').addEventListener('focusin', (event) => {
+  if (event.target.matches('.card')) currentCardId = event.target.dataset.id;
+});
+
+// Tab goes back and forth between the two: from the open list to the cards and back, and
+// the arrows work in whichever has the focus. With nothing focused (as after loading), the
+// arrows and Tab start in the lists. Inside a card's own buttons, or in fields, Tab is as usual.
+function currentListLink() {
+  return navLinks().find((link) => link.tabIndex === 0);
+}
+
+function currentCard() {
+  const cards = [...$('grid').querySelectorAll(':scope > .card')];
+  return cards.find((c) => c.dataset.id === currentCardId) ?? cards[0];
+}
+
+document.addEventListener('keydown', (event) => {
+  if (document.querySelector('dialog[open], .menu__sheet:not([hidden])')) return;
+  const active = document.activeElement;
+  const nothing = !active || active === document.body;
+  if (event.key === 'Tab' && !event.altKey && !event.metaKey && !event.ctrlKey) {
+    const inLists = active?.matches?.('#lists .list-link');
+    const onCard = active?.matches?.('#grid > .card');
+    if (!nothing && !inLists && !onCard) return;
+    const target = inLists ? currentCard() : currentListLink();
+    if (!target) return;
+    event.preventDefault();
+    if (target.matches('.card')) focusCard(target);
+    else target.focus();
+    return;
+  }
+  if (nothing && /^(Arrow|Home$|End$)/.test(event.key)) {
+    const link = currentListLink();
+    if (!link) return;
+    link.focus();
+    listKey(link, event);
+  }
+});
 
 // Your own lists can be dragged up or down the sidebar; a line shows where it will land.
 // Held over one list for NEST_DELAY, the line indents under it: dropped then, the dragged
@@ -900,7 +1163,6 @@ async function editProduct(product) {
   $('edit-price-unit').textContent = product.currency ?? state.currency;
   $('edit-note').value = product.note;
   fillListChoice($('edit-lists'), state.lists, listsOf(product), NO_LIST_NAME);
-  $('edit-lists').open = false;
   // Starts before the dialog opens: the permission prompt needs the click that got us here.
   const pageImages = findPageImages(product);
   editImages = [product.image].filter(Boolean);
@@ -927,7 +1189,7 @@ async function confirmDelete(product) {
 }
 
 async function newList() {
-  const name = await askName('New list');
+  const name = await askName('Add new list');
   if (!name) return;
   const list = await createList(name);
   view.listId = list.id;
@@ -935,7 +1197,7 @@ async function newList() {
 }
 
 async function addSubList(parent) {
-  const name = await askName(`New list in “${parent.name}”`);
+  const name = await askName(`Add new list in “${parent.name}”`);
   if (!name) return;
   setCollapsed(parent.id, false); // Open the parent so the new list shows.
   const list = await createList(name, parent.id);
@@ -1204,7 +1466,7 @@ function showThemeSwitch() {
   $('theme-toggle').querySelector('.menu__label').textContent = dark ? 'Light mode' : 'Dark mode';
 }
 
-// Add by link (the + in the top bar): in the extension the page is read like the popup
+// Add by link (the +): in the extension the page is read like the popup
 // does; the web app cannot read other sites, so it saves the link and opens the item to
 // fill in the rest.
 
@@ -1212,11 +1474,11 @@ async function addByLink() {
   $('add-url').value = '';
   const preselected = view.listId && view.listId !== UNSORTED ? [view.listId] : [];
   fillListChoice($('add-lists'), state.lists, preselected, NO_LIST_NAME);
-  $('add-lists').open = false;
   if (!(await ask($('add-dialog')))) return;
   let url;
   try {
-    url = new URL($('add-url').value.trim()).href;
+    // Without tracking parameters, so the title fallback and the saved link are clean too.
+    url = normalizeUrl(new URL($('add-url').value.trim()).href);
   } catch {
     return toast('That is not a link.');
   }

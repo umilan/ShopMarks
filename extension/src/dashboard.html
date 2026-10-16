@@ -24,6 +24,7 @@
     <div id="search-field" class="input-icon topbar__search">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="search" class="input" type="search" placeholder="Search saved items" aria-label="Search saved items">
+      <span class="search-shortcut" aria-hidden="true"><kbd class="key mod-key">Ctrl</kbd><kbd class="key">K</kbd></span>
     </div>
     <div class="topbar__end">
     <button id="search-toggle" class="button topbar__icon-button topbar__search-toggle" type="button" title="Search" aria-label="Search" aria-expanded="false" aria-controls="search">
@@ -82,7 +83,7 @@
   </header>
 
   <div class="layout">
-    <nav class="sidebar" aria-label="Lists">
+    <nav id="sidebar" class="sidebar" aria-label="Lists">
       <div class="sidebar__head">
         <h2 id="lists-title" class="sidebar__title"></h2>
         <button id="new-list" class="button button--ghost sidebar__new" type="button" title="New list" aria-label="New list">
@@ -95,7 +96,10 @@
 
     <main class="main">
       <div class="main-head">
-        <h2 id="list-title" class="main-head__title"></h2>
+        <div class="main-head__start">
+          <button id="sidebar-toggle" class="button button--ghost sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" title="Hide lists" aria-label="Hide lists"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="sidebar-toggle__rest"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="sidebar-toggle__close"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="sidebar-toggle__open"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg></button>
+          <h2 id="list-title" class="main-head__title"></h2>
+        </div>
         <div class="main-head__controls">
           <div id="sort-field" class="input-icon main-head__sort">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
@@ -113,13 +117,13 @@
               <option value="title-desc">Product name Z–A</option>
             </select>
           </div>
-          <div id="view-field" class="input-icon view-field" data-layout="grid">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-field__grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-field__list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>
-            <select id="view" class="input" aria-label="View" title="Show items as a grid or a list">
-              <option value="grid">Grid</option>
-              <option value="list">List</option>
-            </select>
+          <div id="view-field" class="menu view-field" data-layout="grid">
+            <button id="view-toggle" class="button button--ghost menu__toggle view-field__toggle" type="button" title="View" aria-label="View" aria-haspopup="menu" aria-expanded="false" aria-controls="view-sheet"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--compact"><rect width="4" height="4" x="3" y="3" rx="0.5"/><rect width="4" height="4" x="10" y="3" rx="0.5"/><rect width="4" height="4" x="17" y="3" rx="0.5"/><rect width="4" height="4" x="3" y="10" rx="0.5"/><rect width="4" height="4" x="10" y="10" rx="0.5"/><rect width="4" height="4" x="17" y="10" rx="0.5"/><rect width="4" height="4" x="3" y="17" rx="0.5"/><rect width="4" height="4" x="10" y="17" rx="0.5"/><rect width="4" height="4" x="17" y="17" rx="0.5"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div id="view-sheet" class="menu__sheet" role="menu" hidden>
+              <button class="menu__item view-option" type="button" role="menuitemradio" data-layout="list" aria-checked="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--list"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg><span class="menu__label">List</span><span class="menu__keys" aria-hidden="true"><kbd class="key mod-key">Ctrl</kbd><kbd class="key">1</kbd></span></button>
+              <button class="menu__item view-option" type="button" role="menuitemradio" data-layout="grid" aria-checked="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="menu__label">Grid</span><span class="menu__keys" aria-hidden="true"><kbd class="key mod-key">Ctrl</kbd><kbd class="key">2</kbd></span></button>
+              <button class="menu__item view-option" type="button" role="menuitemradio" data-layout="compact" aria-checked="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="view-icon view-icon--compact"><rect width="4" height="4" x="3" y="3" rx="0.5"/><rect width="4" height="4" x="10" y="3" rx="0.5"/><rect width="4" height="4" x="17" y="3" rx="0.5"/><rect width="4" height="4" x="3" y="10" rx="0.5"/><rect width="4" height="4" x="10" y="10" rx="0.5"/><rect width="4" height="4" x="17" y="10" rx="0.5"/><rect width="4" height="4" x="3" y="17" rx="0.5"/><rect width="4" height="4" x="10" y="17" rx="0.5"/><rect width="4" height="4" x="17" y="17" rx="0.5"/></svg><span class="menu__label">Compact grid</span><span class="menu__keys" aria-hidden="true"><kbd class="key mod-key">Ctrl</kbd><kbd class="key">3</kbd></span></button>
+            </div>
           </div>
           <button id="select-toggle" class="button button--ghost" type="button" hidden title="Select several items to delete them together">Select all</button>
           <button id="delete-selected" class="button button--ghost button--danger" type="button" hidden title="Delete the selected items">Delete selected</button>
@@ -144,48 +148,46 @@
   <dialog id="edit-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 class="dialog__title">Edit item</h2>
-      <div class="preview">
-        <div class="preview__media">
-          <div class="preview__image">
-            <img id="edit-image" alt="" referrerpolicy="no-referrer" hidden>
-          </div>
-          <div id="edit-pager" class="pager">
-            <button id="edit-prev-image" class="pager__button" type="button" aria-label="Previous image" title="Previous picture">‹</button>
-            <span id="edit-image-index" class="muted"></span>
-            <button id="edit-next-image" class="pager__button" type="button" aria-label="Next image" title="Next picture">›</button>
-          </div>
-        </div>
-        <div class="preview__fields">
-          <label class="field">
-            <span class="field__label">Title</span>
-            <textarea id="edit-title" class="input" rows="3" placeholder="Title" required></textarea>
-          </label>
-          <label class="field">
-            <span class="field__label">Price</span>
-            <span class="price-field">
-              <input id="edit-price" class="input" inputmode="decimal" autocomplete="off" placeholder="Price">
-              <span id="edit-price-unit" class="price-field__unit" aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
-      </div>
-      <div class="field field--side">
-        <span class="field__label">Lists</span>
-        <details id="edit-lists" class="list-choice">
-          <summary class="input list-choice__summary"></summary>
-          <div class="list-choice__panel">
-            <div class="list-choice__options"></div>
-            <div class="list-choice__new-row">
-              <input type="checkbox" class="list-choice__new-box" tabindex="-1" aria-hidden="true">
-              <input class="list-choice__new" maxlength="60" autocomplete="off" placeholder="Create new list..." aria-label="Create new list">
+      <div class="dialog__body">
+        <div class="preview">
+          <div class="preview__media">
+            <div class="preview__image">
+              <img id="edit-image" alt="" referrerpolicy="no-referrer" hidden>
+            </div>
+            <div id="edit-pager" class="pager">
+              <button id="edit-prev-image" class="pager__button" type="button" aria-label="Previous image" title="Previous picture">‹</button>
+              <span id="edit-image-index" class="muted"></span>
+              <button id="edit-next-image" class="pager__button" type="button" aria-label="Next image" title="Next picture">›</button>
             </div>
           </div>
-        </details>
+          <div class="preview__fields">
+            <label class="field">
+              <span class="field__label">Title</span>
+              <textarea id="edit-title" class="input" rows="3" placeholder="Title" required></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">Price</span>
+              <span class="price-field">
+                <input id="edit-price" class="input" inputmode="decimal" autocomplete="off" placeholder="Price">
+                <span id="edit-price-unit" class="price-field__unit" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div class="field field--side">
+          <span class="field__label">Lists</span>
+          <div id="edit-lists" class="list-choice">
+            <div class="input list-choice__field">
+              <input class="list-choice__search" maxlength="60" autocomplete="off" aria-label="Lists">
+            </div>
+            <div class="list-choice__panel" hidden></div>
+          </div>
+        </div>
+        <label class="field field--side">
+          <span class="field__label">Note</span>
+          <textarea id="edit-note" class="input" rows="3" placeholder="Add custom note (optional)"></textarea>
+        </label>
       </div>
-      <label class="field field--side">
-        <span class="field__label">Note</span>
-        <textarea id="edit-note" class="input" rows="3" placeholder="Add custom note (optional)"></textarea>
-      </label>
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button class="button button--primary" value="ok" title="Save the changes to this item">Save</button>
@@ -196,10 +198,12 @@
   <dialog id="name-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 id="name-title" class="dialog__title"></h2>
-      <label class="field">
-        <span class="field__label">List name</span>
-        <input id="name-input" class="input" maxlength="60" autocomplete="off" required>
-      </label>
+      <div class="dialog__body">
+        <label class="field">
+          <span class="field__label">List name</span>
+          <input id="name-input" class="input" maxlength="60" autocomplete="off" placeholder="List name" required>
+        </label>
+      </div>
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button class="button button--primary" value="ok" title="Save the list name">Save</button>
@@ -210,17 +214,19 @@
   <dialog id="dropbox-key-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 class="dialog__title">Connect Dropbox</h2>
-      <p class="muted">Sync goes through your own Dropbox app. Once per Dropbox account:</p>
-      <ol class="dialog__steps muted">
-        <li>In the <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener">Dropbox App Console</a>, create an app: <b>Scoped access</b>, <b>App folder</b>.</li>
-        <li><b>Permissions</b>: tick <code>files.content.read</code> and <code>files.content.write</code>, then <b>Submit</b>.</li>
-        <li><b>Settings → OAuth 2</b>: allow public clients, and add this redirect URI: <code id="dropbox-redirect" class="dialog__copy"></code></li>
-        <li>Copy the <b>App key</b> from Settings and paste it here. It is kept on this device only.</li>
-      </ol>
-      <label class="field">
-        <span class="field__label">App key</span>
-        <input id="dropbox-key-input" class="input" maxlength="64" autocomplete="off" spellcheck="false" required>
-      </label>
+      <div class="dialog__body">
+        <p class="muted">Sync goes through your own Dropbox app. Once per Dropbox account:</p>
+        <ol class="dialog__steps muted">
+          <li>In the <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener">Dropbox App Console</a>, create an app: <b>Scoped access</b>, <b>App folder</b>.</li>
+          <li><b>Permissions</b>: tick <code>files.content.read</code> and <code>files.content.write</code>, then <b>Submit</b>.</li>
+          <li><b>Settings → OAuth 2</b>: allow public clients, and add this redirect URI: <code id="dropbox-redirect" class="dialog__copy"></code></li>
+          <li>Copy the <b>App key</b> from Settings and paste it here. It is kept on this device only.</li>
+        </ol>
+        <label class="field">
+          <span class="field__label">App key</span>
+          <input id="dropbox-key-input" class="input" maxlength="64" autocomplete="off" spellcheck="false" required>
+        </label>
+      </div>
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button class="button button--primary" value="ok" title="Save the App key and continue">Save</button>
@@ -231,49 +237,51 @@
   <dialog id="help-dialog" class="dialog dialog--scroll" closedby="any" aria-labelledby="help-title">
     <form method="dialog" class="dialog__form">
       <h2 id="help-title" class="dialog__title">How to use ShopMarks</h2>
-      <div class="help">
-        <h3>Save a product</h3>
-        <ul>
-          <li>On a product page, click the ShopMarks icon.</li>
-          <li>Or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or right-click → <b>Save this product to ShopMarks</b>.</li>
-          <li>Check the title, picture and price, then <b>Save</b>.</li>
-          <li>Choose lists, or type a new one.</li>
-          <li>The bubble button adds a note.</li>
-          <li>Wrong price or name? Click the target button, then the right text on the page.</li>
-          <li>Saved before? Save again to update it.</li>
-        </ul>
+      <div class="dialog__body">
+        <div class="help">
+          <h3>Save a product</h3>
+          <ul>
+            <li>On a product page, click the ShopMarks icon.</li>
+            <li>Or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or right-click → <b>Save this product to ShopMarks</b>.</li>
+            <li>Check the title, picture and price, then <b>Save</b>.</li>
+            <li>Choose lists, or type a new one.</li>
+            <li>The bubble button adds a note.</li>
+            <li>Wrong price or name? Click the target button, then the right text on the page.</li>
+            <li>Saved before? Save again to update it.</li>
+          </ul>
 
-        <h3>Your items</h3>
-        <ul>
-          <li>Open this page from the logo in the popup.</li>
-          <li>Lists are on the left. <b>+</b> adds one; <b>⋯</b> renames or removes it.</li>
-          <li>Search, sort and switch views at the top.</li>
-          <li>Point at a card to edit or delete it.</li>
-          <li>Tick cards to select several.</li>
-          <li>Drag cards onto a list, or onto <b>Trash</b>.</li>
-          <li><b>+</b> in the top bar adds an item from a link.</li>
-          <li><b>Update prices</b> in settings checks current prices.</li>
-        </ul>
+          <h3>Your items</h3>
+          <ul>
+            <li>Open this page from the logo in the popup.</li>
+            <li>Lists are on the left. <b>+</b> adds one; <b>⋯</b> renames or removes it.</li>
+            <li>Search, sort and switch views at the top.</li>
+            <li>Point at a card to edit or delete it.</li>
+            <li>Tick cards to select several.</li>
+            <li>Drag cards onto a list, or onto <b>Trash</b>.</li>
+            <li><b>+</b> in the top bar adds an item from a link.</li>
+            <li><b>Update prices</b> in settings checks current prices.</li>
+          </ul>
 
-        <h3>Keep a copy</h3>
-        <ul>
-          <li><b>Export</b> / <b>Import</b>: one JSON file with everything.</li>
-          <li><b>Backup folder</b>: a copy saved after every change.</li>
-        </ul>
+          <h3>Keep a copy</h3>
+          <ul>
+            <li><b>Export</b> / <b>Import</b>: one JSON file with everything.</li>
+            <li><b>Backup folder</b>: a copy saved after every change.</li>
+          </ul>
 
-        <h3>Sync and phone</h3>
-        <ul>
-          <li><b>Dropbox sync</b>: the same items on all your devices.</li>
-          <li>First time: follow the steps and paste your App key.</li>
-          <li>iPhone: open this page in Safari → Share → <b>Add to Home Screen</b>.</li>
-          <li>The phone saves links; prices fill in on the computer.</li>
-        </ul>
+          <h3>Sync and phone</h3>
+          <ul>
+            <li><b>Dropbox sync</b>: the same items on all your devices.</li>
+            <li>First time: follow the steps and paste your App key.</li>
+            <li>iPhone: open this page in Safari → Share → <b>Add to Home Screen</b>.</li>
+            <li>The phone saves links; prices fill in on the computer.</li>
+          </ul>
 
-        <h3>Install</h3>
-        <ul>
-          <li>Download <b>Chrome extension (.zip)</b> and unzip it.</li>
-          <li><code>chrome://extensions</code> → <b>Developer mode</b> → <b>Load unpacked</b> → the <code>extension</code> folder.</li>
-        </ul>
+          <h3>Install</h3>
+          <ul>
+            <li>Download <b>Chrome extension (.zip)</b> and unzip it.</li>
+            <li><code>chrome://extensions</code> → <b>Developer mode</b> → <b>Load unpacked</b> → the <code>extension</code> folder.</li>
+          </ul>
+        </div>
       </div>
       <div class="dialog__actions">
         <button class="button button--primary" value="ok" title="Close this guide">Got it</button>
@@ -284,8 +292,10 @@
   <dialog id="confirm-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 id="confirm-title" class="dialog__title"></h2>
-      <p id="confirm-text" class="muted"></p>
-      <select id="confirm-choice" class="input" aria-label="Where the items go" hidden></select>
+      <div class="dialog__body">
+        <p id="confirm-text" class="muted"></p>
+        <select id="confirm-choice" class="input" aria-label="Where the items go" hidden></select>
+      </div>
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button id="confirm-ok" class="button button--danger-solid" value="ok" title="Delete permanently">Delete</button>
@@ -300,22 +310,20 @@
   <dialog id="add-dialog" class="dialog" closedby="any">
     <form method="dialog" class="dialog__form">
       <h2 class="dialog__title">Add item</h2>
-      <label class="field">
-        <span class="field__label">Link</span>
-        <input id="add-url" class="input" type="url" inputmode="url" autocomplete="off" placeholder="Paste a product link" required>
-      </label>
-      <div class="field">
-        <span class="field__label">Lists</span>
-          <details id="add-lists" class="list-choice">
-            <summary class="input list-choice__summary"></summary>
-            <div class="list-choice__panel">
-              <div class="list-choice__options"></div>
-              <div class="list-choice__new-row">
-                <input type="checkbox" class="list-choice__new-box" tabindex="-1" aria-hidden="true">
-                <input class="list-choice__new" maxlength="60" autocomplete="off" placeholder="Create new list..." aria-label="Create new list">
+      <div class="dialog__body">
+        <label class="field">
+          <span class="field__label">Link</span>
+          <input id="add-url" class="input" type="url" inputmode="url" autocomplete="off" placeholder="Paste a product link" required>
+        </label>
+        <div class="field">
+          <span class="field__label">Lists</span>
+            <div id="add-lists" class="list-choice">
+              <div class="input list-choice__field">
+                <input class="list-choice__search" maxlength="60" autocomplete="off" aria-label="Lists">
               </div>
+              <div class="list-choice__panel" hidden></div>
             </div>
-          </details>
+        </div>
       </div>
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>

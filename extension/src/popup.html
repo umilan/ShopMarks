@@ -27,16 +27,13 @@
     <div class="field">
       <span class="field__label">Lists</span>
       <div class="input-group list-row">
-        <details id="lists" class="list-choice">
-          <summary class="input list-choice__summary"></summary>
-          <div class="list-choice__panel">
-            <div class="list-choice__options"></div>
-            <div class="list-choice__new-row">
-              <input type="checkbox" class="list-choice__new-box" tabindex="-1" aria-hidden="true">
-              <input class="list-choice__new" maxlength="60" autocomplete="off" placeholder="Create new list..." aria-label="Create new list">
-            </div>
+        <div id="lists" class="list-choice">
+          <div class="input list-choice__field">
+            <input class="list-choice__search" maxlength="60" autocomplete="off" aria-label="Lists">
+            <span class="save-shortcut" aria-hidden="true"><kbd id="save-shortcut-mod" class="key">Ctrl</kbd><kbd class="key"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 10-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></kbd><span class="save-shortcut__equals">=</span><svg class="save-shortcut__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg></span>
           </div>
-        </details>
+          <div class="list-choice__panel" hidden></div>
+        </div>
         <button id="note-toggle" class="button button--ghost icon-button" type="button" title="Add a note" aria-label="Add a note" aria-controls="note-field" aria-expanded="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path class="note-toggle__plus" d="M12 7v6"/><path d="M9 10h6"/></svg></button>
       </div>
     </div>

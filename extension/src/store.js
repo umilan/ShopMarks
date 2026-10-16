@@ -9,7 +9,23 @@ export const NO_LIST_NAME = 'Unsorted';
 export const DEFAULT_CURRENCY = 'EUR';
 export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'CZK', 'PLN', 'HUF', 'SEK', 'DKK', 'NOK'];
 
-const TRACKING_PARAM = /^(utm_\w+|gclid|fbclid|msclkid|mc_[ce]id|_ga)$/i;
+// Query parameters that only track where a visit came from, dropped from saved links (see
+// normalizeUrl). Ad networks and analytics (Google, Meta, TikTok, Microsoft, Yandex,
+// HubSpot, Mailchimp, Seznam/Sklik), AliExpress's spm / scm / algo_* / aff_*, and Amazon's
+// ref / pd_rd_* / pf_rd_* / search leftovers. Parameters that pick the product (ids,
+// variants, sellers) are kept.
+const TRACKING_PARAM = new RegExp(
+  '^(' +
+    [
+      'utm_\\w+', 'gclid', 'gclsrc', 'dclid', 'gbraid', 'wbraid', 'fbclid', 'igshid', 'ttclid', 'twclid', 'msclkid',
+      'yclid', 'li_fat_id', 'mc_[ce]id', '_ga', '_gl', '_hs\\w+', '__hs\\w+', 'hsCtaTracking', 'srsltid', 'sznclid',
+      'spm', 'scm', 'pvid', 'utparam(-\\w+)?', 'algo_\\w+', 'aff_\\w+', 'afSmartRedirect', 'businessCode', 'gatewayAdapt',
+      'terminal_id', '_randl_\\w+', 'pdp_\\w+', 'sk',
+      'ref_?', 'pd_rd_\\w+', 'pf_rd_\\w+', 'content-id', 'linkCode', 'linkId', 'ascsubtag', 'qid', 'sr', 'crid', 'sprefix', 'keywords', 'dib', 'dib_tag',
+    ].join('|') +
+    ')$',
+  'i',
+);
 const EDITABLE_FIELDS = ['title', 'image', 'listIds', 'note'];
 const LOCALE = 'sk-SK';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=EUR';
@@ -19,6 +35,8 @@ export function normalizeUrl(url) {
   try {
     const parsed = new URL(url);
     parsed.hash = '';
+    // Amazon puts its tracking in the path too: /dp/B0…/ref=sr_1_3.
+    parsed.pathname = parsed.pathname.replace(/\/ref=[^/]*$/, '');
     for (const key of [...parsed.searchParams.keys()]) {
       if (TRACKING_PARAM.test(key)) parsed.searchParams.delete(key);
     }
@@ -36,9 +54,10 @@ export function storeOf(url) {
   }
 }
 
+// Compares cleaned links, so an item saved before a tracking parameter was known still matches.
 export function findByUrl(products, url) {
   const normalized = normalizeUrl(url);
-  return products.find((product) => product.url === normalized);
+  return products.find((product) => normalizeUrl(product.url) === normalized);
 }
 
 // Euro exchange rates from the ECB (via Frankfurter): how much of each currency one euro buys.
@@ -153,9 +172,18 @@ function mutate(change) {
     data.deleted = { products: {}, lists: {}, ...data.deleted };
     // Old single-list records move to listIds on the first write.
     for (const product of data.products) {
-      if (!('listId' in product)) continue;
-      product.listIds = listsOf(product);
-      delete product.listId;
+      if ('listId' in product) {
+        product.listIds = listsOf(product);
+        delete product.listId;
+      }
+      // Links saved with tracking parameters are cleaned on the first write (with a title that
+      // was only the link); a newer updatedAt carries the clean link to other devices.
+      const clean = normalizeUrl(product.url);
+      if (clean !== product.url) {
+        if (product.title === product.url) product.title = clean;
+        product.url = clean;
+        product.updatedAt = Date.now();
+      }
     }
     const result = change(data);
     await chrome.storage.local.set(data);

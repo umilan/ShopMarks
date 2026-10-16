@@ -388,6 +388,11 @@ a,
   outline-offset: 0;
 }
 
+/* A dropdown opened with the mouse (marked by dashboard.js): no keyboard focus ring. */
+select[data-pointer]:focus-visible {
+  outline: none;
+}
+
 /* Own chevron instead of the native one, which hugs the right edge. */
 select.input {
   appearance: none;
@@ -459,30 +464,98 @@ textarea.input {
 }
 
 
-/* Multi-choice list picker (listchoice.js): a field like a select that opens in place
-   into checkboxes, with a box to name a new list. */
-.list-choice__summary {
-  display: block;
+/* A key in a shortcut hint (popup save keys, dashboard search keys). */
+.key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  line-height: 1;
+}
+
+/* Multi-choice list picker (listchoice.js): the chosen lists as chips in a field you can
+   type in, which opens a dropdown of the lists filtered by the text. */
+.list-choice__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
   min-height: 40px;
-  line-height: 22px;
-  padding-right: 40px;
-  overflow: hidden;
+  padding: 7px 40px 7px 8px;
   background-image: var(--chevron);
   background-repeat: no-repeat;
-  background-position: right 16px center;
+  /* On the first row, where it is when there is only one. */
+  background-position: right 16px top 11px;
   background-size: 16px;
+  cursor: text;
+}
+
+.list-choice[data-open] .list-choice__field {
+  background-color: var(--color-surface-active);
+}
+
+/* The ring goes on the whole field, not on the bare box inside it. */
+.list-choice__field:has(.list-choice__search:focus-visible) {
+  outline: var(--border-focus);
+  outline-offset: 0;
+}
+
+.list-choice__search {
+  flex: 1;
+  min-width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+}
+
+.list-choice__search::placeholder {
+  color: var(--color-text-muted);
+}
+
+.list-choice__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 2px 0 8px;
+  border-radius: var(--radius);
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.list-choice__chip-name {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  list-style: none;
+}
+
+.list-choice__chip-remove {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
-.list-choice__summary::-webkit-details-marker {
-  display: none;
-}
-
-.list-choice[open] .list-choice__summary {
-  background-color: var(--color-surface-active);
+.list-choice__chip-remove:hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
 }
 
 /* The list picker opens as a dropdown sheet over the content below, like the settings menu:
@@ -502,21 +575,20 @@ textarea.input {
   gap: 2px;
   max-height: 240px;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 8px;
   border: var(--border);
   border-radius: var(--radius-large);
   background: var(--color-surface);
   box-shadow: var(--shadow);
 }
 
-.list-choice__options {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.list-choice__panel[hidden] {
+  display: none;
 }
 
 .list-choice__option {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   min-height: 32px;
@@ -525,47 +597,27 @@ textarea.input {
   cursor: pointer;
 }
 
-.list-choice__option:hover {
+/* Hover and the key-highlighted row look the same. */
+.list-choice__option:hover,
+.list-choice__option--active {
   background: var(--color-surface-hover);
 }
 
 .list-choice__option input {
   margin: 0;
   accent-color: var(--color-primary);
-}
-
-/* The new-list row: laid out like an option, with a checkbox that ticks once a name is typed. */
-.list-choice__new-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 0 8px;
-}
-
-.list-choice__new-box {
-  margin: 0;
-  accent-color: var(--color-primary);
   pointer-events: none;
 }
 
-/* A plain line under the text: no focus ring, just the bottom border. */
-.list-choice__new {
-  flex: 1;
-  min-width: 0;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-bottom: var(--border);
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  outline: none;
+.list-choice__option--create {
+  color: var(--color-accent);
+  font-weight: 600;
 }
 
-.list-choice__new-row .list-choice__new:hover {
-  background: transparent;
+.list-choice__empty {
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
 }
 
 /* The currency sits inside a price field, at its end (popup, edit dialog). */

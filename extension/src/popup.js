@@ -46,6 +46,15 @@ $('hint-close').addEventListener('click', () => {
 $('prev-image').addEventListener('click', () => showImage(imageIndex - 1));
 $('next-image').addEventListener('click', () => showImage(imageIndex + 1));
 $('save-form').addEventListener('submit', save);
+// Cmd+Enter (Ctrl+Enter on Windows) saves from any field; the lists field shows the keys.
+const MOD_KEY = /mac|iphone|ipad/i.test(navigator.userAgentData?.platform ?? navigator.platform) ? '⌘' : 'Ctrl';
+$('save-shortcut-mod').textContent = MOD_KEY;
+$('save').title += ` (${MOD_KEY}+Enter)`;
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey) || $('save').hidden) return;
+  event.preventDefault();
+  $('save-form').requestSubmit();
+});
 
 init();
 
@@ -91,6 +100,8 @@ async function init() {
   $('message').hidden = true;
   $('save-form').hidden = false;
   $('save').hidden = false;
+  // Ready to type a list name as soon as the popup opens.
+  $('lists').querySelector('.list-choice__search').focus();
 }
 
 // The preview never touches a tab: it goes straight to the form with the sample product,
@@ -137,6 +148,8 @@ function setNoteShown(shown) {
 
 async function save(event) {
   event.preventDefault();
+  // A click during the countdown closes the popup right away.
+  if ($('save').classList.contains('button--saved')) return window.close();
   if (PREVIEW) return ($('status').textContent = 'Preview only, nothing was saved.');
   const listIds = await chosenLists($('lists'));
   await rememberLists(listIds);
@@ -153,8 +166,8 @@ async function save(event) {
   // A list named in the new-list box now exists: show it ticked among the others.
   const { lists } = await getState();
   fillListChoice($('lists'), lists, listsOf(saved), NO_LIST_LABEL);
-  $('lists').open = false;
-  // Confirmed on the button itself, with a bar filling it over 1s; then the popup closes.
+  // Confirmed on the button itself, with a bar filling it over 1s; then the popup closes,
+  // or sooner when the button is clicked again.
   $('status').textContent = '';
   $('save').textContent = 'Saved, closing…';
   $('save').classList.add('button--saved');

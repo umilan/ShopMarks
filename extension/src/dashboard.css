@@ -59,6 +59,30 @@ body {
   padding: 8px 16px 8px 40px;
 }
 
+/* The keys that jump to search, at the field's end; gone once it has focus or text, and on
+   touch screens, which have no keyboard to press them on. */
+.search-shortcut {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  display: flex;
+  gap: 2px;
+  translate: 0 -50%;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.topbar__search:has(.input:focus, .input:not(:placeholder-shown)) .search-shortcut {
+  display: none;
+}
+
+@media (hover: none) {
+  .search-shortcut {
+    display: none;
+  }
+}
+
 /* Search, add and settings together at the right edge of the top bar. */
 .topbar__end {
   display: flex;
@@ -413,7 +437,7 @@ a.menu__item:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 40px;
+  min-height: 32px;
   padding: 0 2px 0 16px;
   border: 0;
   border-radius: var(--radius);
@@ -426,6 +450,13 @@ a.menu__item:hover {
 
 .list-link:hover {
   background: var(--color-surface-hover);
+}
+
+/* Touch screens keep the taller rows, easier to hit with a finger. */
+@media (hover: none) {
+  .list-link {
+    min-height: 40px;
+  }
 }
 
 /* A list row: the link fills it; on hover (or with the touch layout always) the count gives
@@ -473,12 +504,8 @@ a.menu__item:hover {
   z-index: 3;
 }
 
-/* Top-level names line up with the "Lists" heading: the row reaches 16px into the sidebar's
-   padding, where a list's chevron hangs left of its name. Sub-lists indent 16px per level. */
-.list-row {
-  margin-left: -16px;
-}
-
+/* Rows keep the sidebar's side padding and the usual 16px inside; a list's chevron sits in
+   that inner padding, just left of its name. Sub-lists indent 16px per level. */
 /* Inside a row the row takes the hover fill; the link adding its own would stack two
    translucent fills (twice as strong as other buttons in dark mode). */
 .list-row > .list-link:not([aria-current="true"]):hover {
@@ -726,6 +753,101 @@ a.menu__item:hover {
   background: linear-gradient(var(--color-field) 0 0) Canvas;
 }
 
+/* Sidebar toggle and the title, together at the start of the heading row. */
+.main-head__start {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.sidebar-toggle {
+  flex: none;
+  /* Its square lines up with the cards' left edge. */
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+/* At rest a plain panel; on hover (or keyboard focus) the arrow shows what a click does:
+   close the lists while they show, open them while hidden. */
+.sidebar-toggle__close,
+.sidebar-toggle__open,
+.sidebar-toggle:is(:hover, :focus-visible) .sidebar-toggle__rest {
+  display: none;
+}
+
+.sidebar-toggle[aria-expanded="true"]:is(:hover, :focus-visible) .sidebar-toggle__close,
+.sidebar-toggle[aria-expanded="false"]:is(:hover, :focus-visible) .sidebar-toggle__open {
+  display: block;
+}
+
+/* Lists hidden: the items take the whole width (desktop; small screens have their own layout). */
+/* Hiding and showing slide: the sidebar column narrows to nothing while the sidebar fades. */
+@media (min-width: 801px) {
+  .layout {
+    transition: grid-template-columns 0.25s ease;
+  }
+
+  .sidebar {
+    min-width: 0;
+    transition:
+      opacity 0.2s ease,
+      visibility 0.25s;
+  }
+
+  .layout--no-sidebar {
+    grid-template-columns: 0px 1fr;
+  }
+
+  .layout--no-sidebar .sidebar {
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (min-width: 801px) and (prefers-reduced-motion: reduce) {
+  .layout,
+  .sidebar {
+    transition: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+/* Lists hidden (desktop): the list dropdown takes the title's place and looks like it, with
+   a chevron; the field only shows on hover. */
+.main-head__start:has(.sidebar__picker) .main-head__title {
+  display: none;
+}
+
+.main-head__start .sidebar__picker {
+  display: block;
+  width: auto;
+  height: 40px;
+  padding: 0 40px 0 8px;
+  background-color: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  field-sizing: content;
+  cursor: pointer;
+}
+
+.main-head__start .sidebar__picker:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.main-head__start .sidebar__picker option {
+  color: var(--color-text);
+  font-weight: 400;
+}
+
 .main-head__title, .sidebar__title {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -735,7 +857,7 @@ a.menu__item:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 0px;
 }
 
 .main-head__sort .input {
@@ -905,30 +1027,59 @@ a.menu__item:hover {
   padding: 0;
 }
 
-/* The view picker: a dropdown like sort, showing only the icon of the view in use and a
-   chevron; the open list names the views. */
-/* Icon at 16–32px, chevron at 40–56px: the same 8px gap as between sort's icon and text. */
-.view-field .input {
-  width: 68px;
+/* The view picker: a menu button showing the icon of the view in use and a chevron; its
+   sheet names the views with their shortcuts. */
+.view-field__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   height: 40px;
-  /* Paddings (40 left for the icon + 28) must not add up to more than the width. */
-  padding-right: 28px;
-  background-color: transparent;
-  background-position: right 12px center;
-  color: transparent;
+  padding: 0 12px;
 }
 
-.view-field .input:hover {
-  background-color: var(--color-surface-hover);
-}
-
-.view-field option {
-  color: var(--color-text);
-}
-
-.view-field[data-layout="grid"] .view-field__list,
-.view-field[data-layout="list"] .view-field__grid {
+.view-field[data-layout="grid"] .view-field__toggle .view-icon:not(.view-icon--grid),
+.view-field[data-layout="list"] .view-field__toggle .view-icon:not(.view-icon--list),
+.view-field[data-layout="compact"] .view-field__toggle .view-icon:not(.view-icon--compact) {
   display: none;
+}
+
+/* The view in use reads as chosen. */
+.view-option[aria-checked="true"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* Shortcut keys at the end of a menu row. */
+.menu__keys {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+/* Compact grid: smaller cards, closer together, with smaller text. */
+.grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.grid--compact .card__image {
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.grid--compact .card__body {
+  padding: 6px 8px;
+}
+
+.grid--compact .card__title {
+  font-size: 13px;
+}
+
+.grid--compact .card__meta {
+  font-size: 12px;
 }
 
 .card--dragging {
@@ -937,6 +1088,17 @@ a.menu__item:hover {
 
 .card:hover {
   box-shadow: var(--shadow);
+}
+
+/* Scrolled to with the keyboard, a card stops clear of the sticky rows above. */
+.card {
+  scroll-margin: calc(var(--sticky-bottom, 128px) + 16px) 0 16px;
+}
+
+/* A card reached with the keyboard: the ring, and the controls show as on hover. */
+.card:focus-visible {
+  outline: var(--border-focus);
+  outline-offset: 2px;
 }
 
 .card__media {
@@ -961,6 +1123,7 @@ a.menu__item:hover {
 }
 
 .card:hover .card__media::before,
+.card:focus-visible .card__media::before,
 .grid--selecting .card__media::before {
   opacity: 1;
 }
@@ -1138,9 +1301,10 @@ a.menu__item:hover {
   max-height: 100%;
   overflow: hidden;
   padding: 8px;
-  background: var(--wht10p);
+  /* No fill of its own: a soft shadow keeps the white text readable on light pictures. */
   color: var(--wht100p);
   font-size: 12px;
+  text-shadow: 0 1px 2px var(--blk50p);
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
@@ -1276,6 +1440,8 @@ a.menu__item:hover {
 
   .card:hover .card__actions,
   .card:hover .card__corner,
+  .card:focus-visible .card__actions,
+  .card:focus-visible .card__corner,
   .grid--selecting .card__corner,
   .card__actions:focus-within {
     opacity: 1;
@@ -1306,10 +1472,18 @@ a.menu__item:hover {
   background: var(--color-overlay);
 }
 
+/* Every dialog: header (title), body, footer (actions), 24px apart; inside the body,
+   fields and text sit 8px apart. */
 .dialog__form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 24px;
+}
+
+.dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* Confirmation text can run over several lines (\n). */
@@ -1401,7 +1575,6 @@ a.menu__item:hover {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
 }
 
 .toast {
@@ -1583,11 +1756,6 @@ a.menu__item:hover {
   height: 1px;
 }
 
-/* Every field in the edit dialog is 8px from the next, as inside the preview. */
-#edit-dialog .dialog__form {
-  gap: 8px;
-}
-
 /* Lists and note: the label sits left of the field, in the thumbnail's 96px column. */
 #edit-dialog .field--side {
   display: grid;
@@ -1611,7 +1779,8 @@ a.menu__item:hover {
 
 /* The fields name themselves by their placeholder or value, as in the popup. The labels stay
    for screen readers. */
-#edit-dialog .field__label {
+#edit-dialog .field__label,
+#name-dialog .field__label {
   position: absolute;
   width: 1px;
   height: 1px;

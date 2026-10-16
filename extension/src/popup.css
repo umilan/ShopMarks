@@ -56,7 +56,6 @@ body {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  pointer-events: none;
   background: var(--color-surface-active);
   color: var(--color-text);
 }
@@ -229,6 +228,31 @@ body {
 .list-row > .list-choice {
   flex: 1;
   min-width: 0;
+}
+
+/* The save keys pinned at the right of the lists field's first row, before its chevron;
+   the field keeps room for them, so chips wrap before reaching them. */
+.list-row .list-choice__field {
+  position: relative;
+  padding-right: 128px;
+}
+
+.save-shortcut {
+  position: absolute;
+  top: 0;
+  right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.save-shortcut__equals {
+  margin: 0 2px;
 }
 
 /* While the note is open the bubble's + becomes a −: closing it hides the note. */
