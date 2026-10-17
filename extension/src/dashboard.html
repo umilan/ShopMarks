@@ -39,6 +39,9 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
       <div id="menu" class="menu__sheet" role="menu" hidden>
+        <!-- Phones only: sorting (the dropdown moves in from the heading row) and the view. -->
+        <label id="sort-row" class="menu__row menu__narrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg><span class="menu__label">Sort</span></label>
+        <label class="menu__row menu__narrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="menu__label">View</span><select id="view-select" class="input menu__select" aria-label="View"><option value="list">List</option><option value="grid">Grid</option><option value="compact">Compact grid</option></select></label>
         <button id="check-prices" class="menu__item" type="button" role="menuitem" title="Read the current price of every item here from its shop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="menu__label">Update prices</span></button>
         <button id="theme-toggle" class="menu__item" type="button" role="menuitem" title="Switch between light and dark mode"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="theme-icon-dark"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g><g class="theme-icon-light"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></svg><span class="menu__label">Dark mode</span></button>
         <label class="menu__row"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg><span class="menu__label">Currency</span><select id="currency" class="input menu__select" aria-label="Currency prices are shown in"></select></label>
@@ -61,6 +64,8 @@
               <button class="button button--ghost menu__toggle menu__more-toggle" type="button" title="Dropbox options" aria-label="Dropbox options" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
               <div class="menu__sheet" role="menu" hidden>
                 <button id="dropbox-sync" class="menu__item" type="button" role="menuitem" hidden title="Sync with Dropbox now"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="menu__label">Sync now</span></button>
+                <button id="dropbox-pictures" class="menu__item" type="button" role="menuitem" hidden title="Allow ShopMarks to read pictures from every shop, so every picture gets a copy in Dropbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg><span class="menu__label">Copy all pictures</span></button>
+                <button id="dropbox-shortcut" class="menu__item" type="button" role="menuitem" hidden title="Save links from the iPhone share sheet to ShopMarks"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg><span class="menu__label">iPhone shortcut</span></button>
                 <button id="dropbox-manage" class="menu__item" type="button" role="menuitem" title="Show the Dropbox setup with the saved App key, and connect again"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg><span class="menu__label">Manage setup</span></button>
                 <button id="dropbox-disconnect" class="menu__item menu__item--danger" type="button" role="menuitem" hidden title="Stop syncing on this device; shopmarks.json stays in Dropbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><span class="menu__label">Stop sync</span></button>
                 <button id="dropbox-clear" class="menu__item menu__item--danger" type="button" role="menuitem" title="Clear the App key and sign-in, back to the first-time setup"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span class="menu__label">Reset to default</span></button>
@@ -230,6 +235,32 @@
       <div class="dialog__actions">
         <button class="button" type="button" value="cancel" title="Close without saving">Cancel</button>
         <button class="button button--primary" value="ok" title="Save the App key and continue">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shortcut-dialog" class="dialog" closedby="any">
+    <form method="dialog" class="dialog__form">
+      <h2 class="dialog__title">iPhone shortcut</h2>
+      <div class="dialog__body">
+        <p class="muted">Adds <b>Save to ShopMarks</b> to the share sheet in Safari and in shop apps. A shared link becomes an item on the next sync.</p>
+        <ol class="dialog__steps muted">
+          <li>On the iPhone, open <a id="shortcut-download" href="../shortcut/Save%20to%20ShopMarks.shortcut" download="Save to ShopMarks.shortcut">the shortcut</a> and tap <b>Add Shortcut</b>.</li>
+          <li>When it asks, paste the two values below. Opening this on the iPhone (the web app) makes copying them easiest.</li>
+          <li>In any share sheet, tap <b>Save to ShopMarks</b>. The first time, allow it to connect to Dropbox.</li>
+        </ol>
+        <label class="field">
+          <span class="field__label">App key</span>
+          <span class="dialog__row"><input id="shortcut-key" class="input" readonly><button class="button" type="button" data-copy="shortcut-key">Copy</button></span>
+        </label>
+        <label class="field">
+          <span class="field__label">Sign-in token</span>
+          <span class="dialog__row"><input id="shortcut-token" class="input" readonly><button class="button" type="button" data-copy="shortcut-token">Copy</button></span>
+        </label>
+        <p class="muted">The token lets the shortcut write to the ShopMarks folder in your Dropbox; keep it to yourself. Reset to default in this menu, or removing the app in Dropbox's settings, stops it working.</p>
+      </div>
+      <div class="dialog__actions">
+        <button class="button button--primary" value="ok">Done</button>
       </div>
     </form>
   </dialog>

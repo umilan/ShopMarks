@@ -10,9 +10,11 @@ import {
   redirectUri as dropboxRedirectUri,
   resetDropbox,
   saveDropboxAppKey,
+  shortcutSetup,
   startDropboxSync,
   syncNow,
 } from './sync.js';
+import { loadThumbs, onThumbsChange, retryFailedThumbs, syncThumbs, thumbFor } from './thumbs.js';
 import { BACKUP_FILE, backupStatus, chooseFolder, forgetFolder, startBackup, writeBackup } from './backup.js';
 import {
   CURRENCIES,
@@ -160,6 +162,19 @@ $('dropbox-manage').addEventListener('click', () => connectToDropbox(true));
 $('dropbox-clear').addEventListener('click', clearDropboxSetup);
 $('dropbox-sync').addEventListener('click', () => runSync(true));
 $('dropbox-disconnect').addEventListener('click', disconnectFromDropbox);
+$('dropbox-pictures').addEventListener('click', allowAllPictures);
+$('dropbox-shortcut').addEventListener('click', showShortcutSetup);
+for (const button of document.querySelectorAll('[data-copy]')) {
+  button.addEventListener('click', async () => {
+    const field = $(button.dataset.copy);
+    try {
+      await navigator.clipboard.writeText(field.value);
+      toast('Copied.');
+    } catch {
+      field.select(); // Copying was not allowed: selected, for the system's Copy.
+    }
+  });
+}
 // Reading the linked page needs access to its shop, asked for while the Add click still
 // counts as the user's (permissions.request needs that).
 let addPermission = null;
@@ -219,6 +234,7 @@ function setLayout(layout) {
   } catch {}
   render();
 }
+$('view-select').addEventListener('change', (event) => setLayout(event.target.value));
 $('view-sheet').addEventListener('click', (event) => {
   const option = event.target.closest('.view-option');
   if (option) setLayout(option.dataset.layout);
@@ -280,20 +296,22 @@ stickyRows.observe(document.querySelector('.topbar'));
 stickyRows.observe(document.querySelector('.sidebar'));
 stickyRows.observe(document.querySelector('.main-head'));
 
-// On small screens the list picker moves up into the top bar and sorting goes to the top of
-// the settings menu; + (add by link) is in the top bar there, and on wider screens in the
+// On small screens the list picker moves up into the top bar and the sort dropdown goes to
+// the top of the settings menu (with the view, which has its own dropdown there); + (add by link) is in the top bar there, and on wider screens in the
 // heading row after the grid / list switch.
 const narrow = matchMedia('(max-width: 800px)');
 const placeControls = () => {
   if (narrow.matches) {
     $('search-field').before($('list-picker'));
-    $('menu').prepend($('sort-field'));
+    $('sort-row').append($('sort'));
     $('search-toggle').after($('add-item'));
   } else if (document.querySelector('.layout--no-sidebar')) {
     // Lists hidden: the list dropdown stands in for the heading's title.
     $('list-title').after($('list-picker'));
+    $('sort-field').append($('sort'));
   } else {
     $('lists').after($('list-picker'));
+    $('sort-field').append($('sort'));
     // Sort first, then the grid / list switch, then + (add by link).
     $('view-field').before($('sort-field'));
     $('view-field').after($('add-item'));
@@ -360,7 +378,9 @@ $('list-picker').addEventListener('change', (event) => {
 });
 
 onChange(refresh);
-refresh();
+// Pictures show from this device's copies (thumbs.js) once they are loaded.
+loadThumbs().finally(refresh);
+onThumbsChange(() => loadThumbs().then(render));
 loadRates().then((loaded) => {
   rates = loaded;
   render();
@@ -388,7 +408,7 @@ finishDropboxRedirect()
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') runSync(false);
 });
-if (WEB) startDropboxSync();
+if (WEB) startDropboxSync(syncThumbs);
 
 // Folder access is a Chromium feature; other browsers keep Export and Import only.
 if ('showDirectoryPicker' in globalThis) {
@@ -534,6 +554,7 @@ function render() {
   $('grid').classList.toggle('grid--compact', view.layout === 'compact');
   // The view picker shows the icon of the view in use, and its menu ticks it.
   $('view-field').dataset.layout = view.layout;
+  $('view-select').value = view.layout;
   for (const option of document.querySelectorAll('.view-option')) option.setAttribute('aria-checked', String(option.dataset.layout === view.layout));
   if (before) rearrange(before);
   if (nearEnd()) showMore();
@@ -911,10 +932,12 @@ function card(product) {
     image.replaceChildren(product.store || 'No image');
   };
   if (product.image) {
+    // This device's copy when there is one, else straight from the shop.
+    const src = thumbFor(product.image) ?? product.image;
     // The same picture twice: blurred to fill the area behind, and whole on top.
     image.append(
-      el('img', { className: 'card__backdrop', src: product.image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer', ariaHidden: 'true' }),
-      el('img', { src: product.image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer', onerror: showPlaceholder }),
+      el('img', { className: 'card__backdrop', src, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer', ariaHidden: 'true' }),
+      el('img', { src, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer', onerror: showPlaceholder }),
     );
   } else {
     showPlaceholder();
@@ -1532,6 +1555,30 @@ async function refreshDropbox() {
   $('dropbox-more').hidden = !on && !key;
   $('dropbox-sync').hidden = !on;
   $('dropbox-disconnect').hidden = !on;
+  $('dropbox-shortcut').hidden = !on;
+  $('dropbox-pictures').hidden = !on || WEB || (await chrome.permissions.contains({ origins: ALL_SITES }));
+}
+
+async function showShortcutSetup() {
+  const setup = await shortcutSetup();
+  if (!setup) return;
+  $('shortcut-key').value = setup.appKey;
+  $('shortcut-token').value = setup.token;
+  await ask($('shortcut-dialog'));
+}
+
+// Picture copies are made from shops the extension has access to (and shops that allow it);
+// granting all of them once lets it copy every picture.
+const ALL_SITES = ['http://*/*', 'https://*/*'];
+
+async function allowAllPictures() {
+  // Must stay the first await: the permission prompt needs the click that got us here.
+  const granted = await chrome.permissions.request({ origins: ALL_SITES }).catch(() => false);
+  if (!granted) return toast('Pictures are copied only from shops ShopMarks already has access to.');
+  await retryFailedThumbs();
+  await refreshDropbox();
+  toast('Copying the pictures to Dropbox. They appear as they are saved.');
+  syncThumbs().catch(console.error);
 }
 
 // The row's own click: sync now when connected, otherwise connect (setting up first if needed).
@@ -1546,6 +1593,7 @@ async function runSync(announce) {
   try {
     const synced = await syncNow();
     if (synced && announce) toast('Synced with Dropbox.');
+    if (synced) syncThumbs().catch(console.error); // Can take a while; the cards update as copies arrive.
   } catch (error) {
     console.error(error);
     if (announce) toast('Dropbox sync failed. Check the connection and try again.');

@@ -26,6 +26,20 @@ The web app is the dashboard page itself, so any static hosting works. With GitH
 - **Computer:** dashboard → settings menu → **Sync with Dropbox**, and allow access.
 - **iPhone:** open the web app address in Safari → Share → **Add to Home Screen**. Open ShopMarks from the Home Screen → settings → **Sync with Dropbox**.
 
+### 4. iPhone share sheet (optional)
+
+The **Save to ShopMarks** shortcut puts a shared link into `Apps/ShopMarks/inbox/`; the next sync on any device adds it as an item (title and price come later, like a link added with **+**).
+
+1. On the iPhone, open the web app → settings → Dropbox **⋯** → **iPhone shortcut**.
+2. Tap **the shortcut** link, then **Add Shortcut**, and paste the App key and sign-in token from that dialog when asked.
+3. In Safari or a shop app: Share → **Save to ShopMarks**. The first run asks to allow connecting to Dropbox.
+
+The file is `extension/shortcut/Save to ShopMarks.shortcut`; `python3 tools/shortcut/build.py` rebuilds and signs it on a Mac.
+
+## Picture copies
+
+After each sync, the extension saves a small copy of every item's picture to `Apps/ShopMarks/thumbs/`, and every device keeps the copies it uses, so pictures show offline and outlast the shop's page. **Copy all pictures** (Dropbox **⋯**) lets the extension read pictures from any shop; without it only shops it already has access to, or that allow it, get a copy.
+
 ## Using it
 
 - Syncs happen on their own: a couple of seconds after a change, when a ShopMarks page is opened, and when you come back to it. **Sync now** in the settings menu forces one.

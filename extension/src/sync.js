@@ -7,9 +7,12 @@
 // Sign-in is Dropbox OAuth with PKCE (no server or secret): in the extension through
 // chrome.identity, in the web app by sending the page to Dropbox and back.
 
-import { applySyncData, mergeData, sameData, syncData } from './store.js';
+import { applySyncData, findByUrl, getState, mergeData, normalizeUrl, sameData, saveProduct, syncData } from './store.js';
 
 const FILE = '/shopmarks.json';
+// Links shared from an iPhone by the Save to ShopMarks shortcut (SHORTCUT.md): one text file
+// each, taken in as new items on the next sync.
+const INBOX = '/inbox';
 const KEY = 'dropbox';
 const APP_KEY = 'dropboxAppKey';
 const LOCK = 'shopmarks-sync';
@@ -92,6 +95,12 @@ async function finishConnect(code, verifier) {
   await chrome.storage.local.set({ [KEY]: { refreshToken: token.refresh_token, name: account.name?.display_name ?? 'Dropbox' } });
 }
 
+// What the iPhone shortcut needs to write to the inbox; null when not connected.
+export async function shortcutSetup() {
+  const { [KEY]: account } = await chrome.storage.local.get(KEY);
+  return account ? { appKey: await dropboxAppKey(), token: account.refreshToken } : null;
+}
+
 export async function disconnectDropbox() {
   accessToken = null;
   await chrome.storage.local.remove(KEY);
@@ -114,6 +123,7 @@ export function syncNow() {
     const status = await dropboxStatus();
     if (status.state !== 'on') return false;
     try {
+      await takeInbox();
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const remote = await download();
         const merged = mergeData(await syncData(), remote?.data ?? {});
@@ -132,6 +142,26 @@ export function syncNow() {
   });
 }
 
+// Adds the links waiting in the inbox (any http(s) link in each file, so a shared text with a
+// link in it works too), then deletes those files. A link already saved is skipped.
+async function takeInbox() {
+  const response = await apiResponse('https://api.dropboxapi.com/2/files/list_folder', { body: JSON.stringify({ path: INBOX }), json: true });
+  if (response.status === 409) return; // No inbox yet.
+  if (!response.ok) throw new Error(`Dropbox inbox: ${response.status}`);
+  const files = (await response.json()).entries.filter((entry) => entry['.tag'] === 'file');
+  if (!files.length) return;
+  for (const file of files) {
+    const download = await apiResponse('https://content.dropboxapi.com/2/files/download', { arg: { path: file.path_lower } });
+    if (!download.ok) continue;
+    for (const link of (await download.text()).match(/https?:\/\/[^\s"'<>]+/g) ?? []) {
+      const url = normalizeUrl(link);
+      if (!findByUrl((await getState()).products, url)) await saveProduct({ url });
+    }
+  }
+  const entries = files.map((file) => ({ path: file.path_lower }));
+  await apiResponse('https://api.dropboxapi.com/2/files/delete_batch', { body: JSON.stringify({ entries }), json: true });
+}
+
 async function markAccount(change) {
   const { [KEY]: account } = await chrome.storage.local.get(KEY);
   if (account) await chrome.storage.local.set({ [KEY]: { ...account, ...change } });
@@ -139,12 +169,13 @@ async function markAccount(change) {
 
 // Syncs a moment after the collection changes (a burst of changes becomes one sync).
 // Only the collection: settings, and this module's own bookkeeping, must not start one.
-export function startDropboxSync() {
+// afterSync runs after each sync that went through (the picture copies, thumbs.js).
+export function startDropboxSync(afterSync = () => {}) {
   let timer;
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !['products', 'lists', 'deleted'].some((key) => key in changes)) return;
     clearTimeout(timer);
-    timer = setTimeout(() => syncNow().catch(() => {}), SYNC_DELAY);
+    timer = setTimeout(() => syncNow().then((synced) => synced && afterSync()).catch(() => {}), SYNC_DELAY);
   });
 }
 
@@ -179,7 +210,7 @@ async function api(url, options) {
   return response.json();
 }
 
-async function apiResponse(url, { arg, body, json = false, contentType } = {}) {
+export async function apiResponse(url, { arg, body, json = false, contentType } = {}) {
   const headers = { Authorization: `Bearer ${await currentToken()}` };
   if (arg) headers['Dropbox-API-Arg'] = asciiJson(arg);
   if (json) headers['Content-Type'] = 'application/json';

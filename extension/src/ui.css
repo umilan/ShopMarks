@@ -412,6 +412,17 @@ textarea.input {
   resize: vertical;
 }
 
+/* iOS zooms the page in on a field whose text is under 16px; on touch screens fields
+   use at least that, which keeps pinch-zoom working (a locked viewport would not).
+   Important, so fields styled smaller elsewhere (the list picker) are covered too. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
 /* "Shop" in the app name, in the logo's green (the palette accent, the same in both
    themes like the logo). */
 .name-accent {

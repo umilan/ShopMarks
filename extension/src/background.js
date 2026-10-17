@@ -1,5 +1,6 @@
 import { startBackup } from './backup.js';
 import { startDropboxSync } from './sync.js';
+import { syncThumbs } from './thumbs.js';
 import { extractFromTab } from './page.js';
 import { findByUrl, getState, saveProduct, setPriceSpot, setTitleSpot, updateProduct } from './store.js';
 
@@ -7,9 +8,10 @@ const MENU_ID = 'saver-save-page';
 const BADGE_OK = '#1f6f5c';
 const BADGE_ERROR = '#b3261e';
 
-// Keeps the backup file and the Dropbox copy current when no ShopMarks page is open.
+// Keeps the backup file and the Dropbox copy (with the picture copies) current when no
+// ShopMarks page is open.
 startBackup();
-startDropboxSync();
+startDropboxSync(syncThumbs);
 
 chrome.runtime.onInstalled.addListener(() => {
   // Menus survive updates, so start clean instead of failing on a duplicate id.

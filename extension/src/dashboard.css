@@ -194,13 +194,17 @@ body {
   border-top: var(--border);
 }
 
-/* On small screens sorting sits at the top of the settings menu, full width. */
-#menu #sort {
-  width: 100%;
+/* Settings that sit in the heading row on wider screens, at the top of the menu on phones. */
+.menu__narrow {
+  display: none;
 }
 
-#menu #sort-field {
-  margin: 4px 0 8px;
+#sort-row .input {
+  width: auto;
+  height: 32px;
+  margin-left: auto;
+  padding-block: 0;
+  field-sizing: content;
 }
 
 /* The Dropbox group continues the backup group: no line and no extra space above it, just
@@ -1565,6 +1569,12 @@ a.menu__item:hover {
 }
 
 /* A value to copy: one click selects all of it. */
+/* A read-only value with its Copy button. */
+.dialog__row {
+  display: flex;
+  gap: 8px;
+}
+
 .dialog__copy {
   overflow-wrap: anywhere;
   user-select: all;
@@ -1624,11 +1634,13 @@ a.menu__item:hover {
     padding-left: 16px;
   }
 
-  /* Sort shrinks to its icon; the open dropdown still lists the options by name.
-     It also pushes the icon buttons to the right edge. */
-  .topbar .main-head__sort {
-    flex: none;
-    margin-left: auto;
+  .menu__narrow {
+    display: flex;
+  }
+
+  /* Its dropdown is in the settings menu. */
+  #sort-field {
+    display: none;
   }
 
   /* Sorting is in the settings menu now, so the icon buttons take the free space and sit at the right edge. */
@@ -1636,33 +1648,13 @@ a.menu__item:hover {
     margin-left: auto;
   }
 
-  .topbar .main-head__sort .input {
-    width: 40px;
-    padding: 0;
-    background-image: none;
-    color: transparent;
-  }
-
-  .topbar .main-head__sort option {
-    color: var(--color-text);
-  }
-
-
-  .topbar .main-head__sort > svg {
-    left: 50%;
-    translate: -50% -50%;
-    color: var(--color-text);
-  }
-
   /* Plain controls: the field shows only on hover, or while its menu is open. */
   .topbar .sidebar__picker,
-  .topbar .main-head__sort .input,
   .topbar .topbar__icon-button {
     background-color: transparent;
   }
 
   .topbar .sidebar__picker:hover,
-  .topbar .main-head__sort .input:hover,
   .topbar .topbar__icon-button:hover {
     background-color: var(--color-surface-hover);
   }
@@ -1675,7 +1667,6 @@ a.menu__item:hover {
   .topbar__search-close,
   .topbar--searching .sidebar__picker,
   .topbar--searching #add-item,
-  .topbar--searching .main-head__sort,
   .topbar--searching .topbar__search-open {
     display: none;
   }
