@@ -14,6 +14,8 @@ import {
   startDropboxSync,
   syncNow,
 } from './sync.js';
+import { fillDetails } from './fill.js';
+import { readPage as readShopPage } from './readpage.js';
 import { loadThumbs, onThumbsChange, retryFailedThumbs, syncThumbs, thumbFor } from './thumbs.js';
 import { BACKUP_FILE, backupStatus, chooseFolder, forgetFolder, startBackup, writeBackup } from './backup.js';
 import {
@@ -48,6 +50,7 @@ import {
 const $ = (id) => document.getElementById(id);
 const PRICE_CHECKS_AT_ONCE = 4;
 const TOAST_MS = 5000;
+const SYNC_EVERY_MS = 90 * 1000;
 
 const euros = (product) => toEuro(product.price, product.currency, rates);
 const comparePrice = (a, b) => (euros(a) ?? Infinity) - (euros(b) ?? Infinity) || 0;
@@ -408,7 +411,17 @@ finishDropboxRedirect()
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') runSync(false);
 });
-if (WEB) startDropboxSync(syncThumbs);
+// And regularly while the page is in view, so links shared from the iPhone show up by themselves.
+setInterval(() => {
+  if (document.visibilityState === 'visible' && !dropboxBusy) runSync(false);
+}, SYNC_EVERY_MS);
+if (WEB) startDropboxSync(afterSync);
+
+// Bare links (shared from the iPhone) get their details; then the picture copies follow.
+async function afterSync() {
+  if (!WEB) await fillDetails((url, spots) => readShopPage(url, spots)).catch(console.error);
+  await syncThumbs().catch(console.error);
+}
 
 // Folder access is a Chromium feature; other browsers keep Export and Import only.
 if ('showDirectoryPicker' in globalThis) {
@@ -1525,18 +1538,8 @@ async function addByLink() {
 }
 
 async function readPage(url) {
-  try {
-    const response = await fetch(url, { credentials: 'omit' });
-    if (!response.ok) return null;
-    const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-    const spots = await priceSpots();
-    return globalThis.SaverExtract(doc, url, {
-      priceSpot: spots[new URL(url).hostname.replace(/^www\./, '')],
-      titleSpot: await titleSpotFor(url),
-    });
-  } catch {
-    return null;
-  }
+  const spots = await priceSpots();
+  return readShopPage(url, { priceSpot: spots[new URL(url).hostname.replace(/^www\./, '')], titleSpot: await titleSpotFor(url) });
 }
 
 // Dropbox sync
@@ -1578,7 +1581,7 @@ async function allowAllPictures() {
   await retryFailedThumbs();
   await refreshDropbox();
   toast('Copying the pictures to Dropbox. They appear as they are saved.');
-  syncThumbs().catch(console.error);
+  afterSync();
 }
 
 // The row's own click: sync now when connected, otherwise connect (setting up first if needed).
@@ -1593,7 +1596,8 @@ async function runSync(announce) {
   try {
     const synced = await syncNow();
     if (synced && announce) toast('Synced with Dropbox.');
-    if (synced) syncThumbs().catch(console.error); // Can take a while; the cards update as copies arrive.
+    // Can take a while; the cards update as details and picture copies arrive.
+    if (synced) afterSync();
   } catch (error) {
     console.error(error);
     if (announce) toast('Dropbox sync failed. Check the connection and try again.');

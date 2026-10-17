@@ -28,7 +28,7 @@ The web app is the dashboard page itself, so any static hosting works. With GitH
 
 ### 4. iPhone share sheet (optional)
 
-The **Save to ShopMarks** shortcut puts a shared link into `Apps/ShopMarks/inbox/`; the next sync on any device adds it as an item (title and price come later, like a link added with **+**).
+The **Save to ShopMarks** shortcut puts a shared link into `Apps/ShopMarks/inbox/`; the next sync on any device adds it as an item. The extension then reads the shop page and fills in the name, picture and price (for shops it has access to; **Copy all pictures** grants all of them).
 
 1. On the iPhone, open the web app → settings → Dropbox **⋯** → **iPhone shortcut**.
 2. Tap **the shortcut** link, then **Add Shortcut**, and paste the App key and sign-in token from that dialog when asked.
@@ -42,7 +42,7 @@ After each sync, the extension saves a small copy of every item's picture to `Ap
 
 ## Using it
 
-- Syncs happen on their own: a couple of seconds after a change, when a ShopMarks page is opened, and when you come back to it. **Sync now** in the settings menu forces one.
+- Syncs happen on their own: a couple of seconds after a change, when a ShopMarks page is opened or you come back to it, every 90 seconds while it is in view, and every 5 minutes in the extension's background. **Sync now** in the settings menu forces one.
 - On the phone, the **+** in the top bar adds an item from a link (copy it in Safari, paste it there). The web app cannot read other sites, so it saves the link and opens the item for you to add the title and price; the next **Update prices** on the computer fills in the price.
 - **Stop Dropbox sync** disconnects this device; the file stays in Dropbox.
 

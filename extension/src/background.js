@@ -1,5 +1,6 @@
 import { startBackup } from './backup.js';
-import { startDropboxSync } from './sync.js';
+import { fillDetails } from './fill.js';
+import { startDropboxSync, syncNow } from './sync.js';
 import { syncThumbs } from './thumbs.js';
 import { extractFromTab } from './page.js';
 import { findByUrl, getState, saveProduct, setPriceSpot, setTitleSpot, updateProduct } from './store.js';
@@ -7,11 +8,35 @@ import { findByUrl, getState, saveProduct, setPriceSpot, setTitleSpot, updatePro
 const MENU_ID = 'saver-save-page';
 const BADGE_OK = '#1f6f5c';
 const BADGE_ERROR = '#b3261e';
+const SYNC_ALARM = 'dropbox-sync';
+const SYNC_EVERY_MINUTES = 5;
 
 // Keeps the backup file and the Dropbox copy (with the picture copies) current when no
 // ShopMarks page is open.
 startBackup();
-startDropboxSync(syncThumbs);
+startDropboxSync(afterSync);
+
+// Also every few minutes, so links shared from the iPhone arrive with no ShopMarks page open.
+chrome.alarms.get(SYNC_ALARM).then((alarm) => alarm || chrome.alarms.create(SYNC_ALARM, { periodInMinutes: SYNC_EVERY_MINUTES }));
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === SYNC_ALARM) syncNow().then((synced) => synced && afterSync()).catch(() => {});
+});
+
+// Shared links get their details first, so the picture copy is made of the right picture.
+async function afterSync() {
+  await fillDetails(readInOffscreen).catch(() => {});
+  await syncThumbs().catch(() => {});
+}
+
+// The worker has no DOMParser: shop pages are read in a hidden offscreen page.
+async function readInOffscreen(url, spots) {
+  if (!(await chrome.offscreen.hasDocument())) {
+    await chrome.offscreen
+      .createDocument({ url: 'src/offscreen.html', reasons: ['DOM_PARSER'], justification: 'Read product details from shop pages' })
+      .catch(() => {}); // Another call created it in between.
+  }
+  return chrome.runtime.sendMessage({ type: 'read-page', url, spots });
+}
 
 chrome.runtime.onInstalled.addListener(() => {
   // Menus survive updates, so start clean instead of failing on a duplicate id.
